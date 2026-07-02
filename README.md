@@ -1,12 +1,23 @@
+# AERHER — 럭셔리 향수 브랜드 e-커머스
 
-  # E-commerce Brand Website
+> 에테르는 세상의 모든 감각을 아우르는 보이지 않는 공기, 그 순수한 향을 빚어내는 브랜드입니다.
 
-  This is a code bundle for E-commerce Brand Website. The original project is available at https://www.figma.com/design/7VqZdp4jhFUnULJdqam74z/E-commerce-Brand-Website.
+React + TypeScript로 구현한 프리미엄 향수 브랜드 쇼핑몰입니다. 브랜드 감성 전달부터 상품 탐색, 소셜 로그인, 장바구니, 결제까지 e-커머스 핵심 기능을 포함합니다.
 
-  ## Running the code
+---
 
-  Run `npm i` to install the dependencies.
+## 주요 기능
 
-  Run `npm run dev` to start the development server.
-  
-# Aerter
+- **브랜드 경험** — 풀스크린 히어로, 컬렉션 스토리, 브랜드 소개 페이지
+- **상품 탐색** — 컬렉션별 필터, 실시간 검색 오버레이
+- **소셜 로그인** — 카카오 · 네이버 · Google OAuth 구조
+- **장바구니 & 결제** — 수량 조절, 무료배송 자동계산, 3단계 결제 플로우
+- **배송지 관리** — 카카오 주소 검색 연동, 저장 배송지 자동 입력
+- **마이페이지** — 주문 내역 · 위시리스트 · 배송지 관리
+- **반응형** — 데스크탑 · 태블릿 · 모바일 대응
+
+---
+
+## 기술 스택
+
+`React 18` `TypeScript` `React Router v7` `Tailwind CSS v4` `Vite` `Context API` `localStorage`
