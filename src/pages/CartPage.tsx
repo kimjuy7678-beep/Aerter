@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router';
 import { Trash2, ShoppingBag, Lock } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
+import { useAuthStore } from '../store/useAuthStore';
 
 function formatPrice(n: number) {
   return n.toLocaleString('ko-KR') + '원';
@@ -9,7 +9,7 @@ function formatPrice(n: number) {
 
 export default function CartPage() {
   const { items, totalPrice, totalCount, removeItem, updateQty } = useCart();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn } = useAuthStore();
   const navigate = useNavigate();
 
   const SHIPPING = totalPrice >= 50000 || totalPrice === 0 ? 0 : 3000;

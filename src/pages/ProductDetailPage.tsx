@@ -5,10 +5,9 @@ import { collections } from '../data/collections';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
-import { useAuth } from '../context/AuthContext';
+import { useAuthStore } from '../store/useAuthStore';
 import type { Product, Collection } from '../types';
 
-// Find product + its parent collection by product id
 function findProduct(id: string): { product: Product; collection: Collection } | null {
   for (const col of collections) {
     const product = col.products.find((p) => p.id === id);
@@ -17,12 +16,10 @@ function findProduct(id: string): { product: Product; collection: Collection } |
   return null;
 }
 
-// Other products in same collection (excluding current)
 function getSiblings(collection: Collection, currentId: string): Product[] {
   return collection.products.filter((p) => p.id !== currentId);
 }
 
-// Related products from other collections (one per collection)
 function getRelated(currentCollectionId: string): Array<Product & { collectionName: string }> {
   return collections
     .filter((c) => c.id !== currentCollectionId)
@@ -57,8 +54,8 @@ export default function ProductDetailPage() {
   const [added, setAdded] = useState(false);
   const { addItem } = useCart();
   const { toggle, isWished } = useWishlist();
-  const { isLoggedIn } = useAuth();
-  // productId from useParams is the same as product.id — use it before the null guard
+  const { isLoggedIn } = useAuthStore();
+
   const wished = isWished(productId ?? '');
 
   const result = findProduct(productId ?? '');
@@ -173,11 +170,10 @@ export default function ProductDetailPage() {
               >
                 <Heart
                   size={18}
-                  className={`transition-all duration-200 ${
-                    wished
-                      ? 'fill-foreground text-foreground'
-                      : 'text-foreground/40 group-hover:text-foreground'
-                  }`}
+                  className={`transition-all duration-200 ${wished
+                    ? 'fill-foreground text-foreground'
+                    : 'text-foreground/40 group-hover:text-foreground'
+                    }`}
                 />
               </button>
             </div>
@@ -230,11 +226,10 @@ export default function ProductDetailPage() {
 
               <button
                 onClick={handleAddToCart}
-                className={`w-full h-14 font-pretendard font-light text-[12px] tracking-[0.3em] transition-all duration-300 ${
-                  added
-                    ? 'bg-foreground/80 text-background'
-                    : 'bg-foreground text-background hover:bg-foreground/85'
-                }`}
+                className={`w-full h-14 font-pretendard font-light text-[12px] tracking-[0.3em] transition-all duration-300 ${added
+                  ? 'bg-foreground/80 text-background'
+                  : 'bg-foreground text-background hover:bg-foreground/85'
+                  }`}
                 aria-live="polite"
               >
                 {added ? '장바구니에 추가되었습니다 ✓' : '장바구니 담기'}

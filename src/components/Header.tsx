@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Menu, X, Search, User, ShoppingBag, LogOut, ChevronDown } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
+import { useAuthStore } from '../store/useAuthStore';
 import SearchOverlay from './SearchOverlay';
 
 interface NavItem {
@@ -27,7 +27,7 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { totalCount } = useCart();
-  const { isLoggedIn, user, logout } = useAuth();
+  const { isLoggedIn, user, logout } = useAuthStore();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -60,8 +60,8 @@ export default function Header() {
     setMenuOpen(false);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     setUserMenuOpen(false);
     navigate('/');
   };

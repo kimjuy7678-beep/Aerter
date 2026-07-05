@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { User, Package, Heart, MapPin, ChevronRight, LogOut, ShoppingBag, Check, Search } from 'lucide-react';
 import { useWishlist } from '../context/WishlistContext';
 import { useOrders } from '../context/OrderContext';
 import { useAddresses, type SavedAddress } from '../context/AddressContext';
 import { useDaumPostcode } from '../hooks/useDaumPostcode';
+import { useAuthStore } from '../store/useAuthStore';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 const STATUS_STYLE: Record<string, string> = {
@@ -23,12 +24,34 @@ const TABS = [
 
 const ACCOUNT_STORAGE_KEY = 'aerher_account';
 
-function loadAccount() {
+interface StoredAccountExtras {
+  name?: string;
+  email?: string;
+  phone?: string;
+  grade?: string;
+  point?: number;
+}
+
+// name/email default to the real logged-in social account. Extra fields
+// (phone/grade/point) — and a manually-edited name/email override, if the
+// user explicitly saved one in the 계정 정보 tab — persist locally, since
+// Google/Kakao/Naver don't provide them.
+function loadAccount(authUser: { name: string; email: string } | null) {
+  let stored: StoredAccountExtras = {};
   try {
-    const stored = localStorage.getItem(ACCOUNT_STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch { }
-  return { name: '김에테르', email: 'aether@example.com', phone: '010-1234-5678', grade: 'SILVER', point: 3_200 };
+    const raw = localStorage.getItem(ACCOUNT_STORAGE_KEY);
+    if (raw) stored = JSON.parse(raw);
+  } catch {
+    /* ignore malformed storage */
+  }
+
+  return {
+    name: stored.name || authUser?.name || '회원',
+    email: stored.email || authUser?.email || '',
+    phone: stored.phone ?? '',
+    grade: stored.grade ?? 'SILVER',
+    point: stored.point ?? 0,
+  };
 }
 
 function MyPage() {
@@ -37,6 +60,8 @@ function MyPage() {
   const { orders } = useOrders();
   const { addresses, addAddress, updateAddress, deleteAddress, setDefault } = useAddresses();
   const { openPostcode } = useDaumPostcode();
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   // New address form state
   const [showAddForm, setShowAddForm] = useState(false);
@@ -76,8 +101,27 @@ function MyPage() {
     resetAddrForm();
   };
 
-  const [account, setAccount] = useState(loadAccount);
+  const [account, setAccount] = useState(() => loadAccount(user));
   const [accountSaved, setAccountSaved] = useState(false);
+
+  // If the logged-in user changes (e.g. logs in after this component mounted,
+  // or switches accounts) and no manual override is stored, keep name/email
+  // in sync with the real social account.
+  useEffect(() => {
+    let stored: StoredAccountExtras = {};
+    try {
+      const raw = localStorage.getItem(ACCOUNT_STORAGE_KEY);
+      if (raw) stored = JSON.parse(raw);
+    } catch {
+      /* ignore */
+    }
+    setAccount((prev) => ({
+      ...prev,
+      name: stored.name || user?.name || prev.name,
+      email: stored.email || user?.email || prev.email,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAccount((prev: typeof account) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -90,14 +134,23 @@ function MyPage() {
     setTimeout(() => setAccountSaved(false), 2500);
   };
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
   return (
     <div className="pt-20 min-h-screen pb-24">
       {/* Profile header */}
       <div className="bg-[#f9f7f5] px-8 md:px-16 lg:px-24 py-12">
         <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-full bg-foreground/10 flex items-center justify-center">
-              <User size={28} className="text-foreground/40" />
+            <div className="w-16 h-16 rounded-full bg-foreground/10 flex items-center justify-center overflow-hidden">
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt={account.name} className="w-full h-full object-cover" />
+              ) : (
+                <User size={28} className="text-foreground/40" />
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2 mb-0.5">
@@ -142,7 +195,10 @@ function MyPage() {
                 {activeTab !== id && <ChevronRight size={13} className="ml-auto opacity-40" />}
               </button>
             ))}
-            <button className="flex items-center gap-3 px-4 py-3 text-left text-muted-foreground hover:text-foreground transition-colors mt-4 md:mt-8">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-3 text-left text-muted-foreground hover:text-foreground transition-colors mt-4 md:mt-8"
+            >
               <LogOut size={15} />
               <span className="font-pretendard text-[13px] tracking-wide">로그아웃</span>
             </button>
@@ -335,13 +391,13 @@ function MyPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      {[
+                      {([
                         { label: '받는 분', name: 'name', type: 'text', placeholder: '홍길동' },
                         { label: '연락처', name: 'phone', type: 'tel', placeholder: '010-0000-0000' },
-                      ].map((f) => (
+                      ] as const).map((f) => (
                         <div key={f.name}>
                           <label className="font-pretendard text-[11px] tracking-widest text-muted-foreground uppercase block mb-2">{f.label}</label>
-                          <input type={f.type} value={(addrForm as Record<string, string>)[f.name]} placeholder={f.placeholder}
+                          <input type={f.type} value={addrForm[f.name]} placeholder={f.placeholder}
                             onChange={(e) => setAddrForm((p) => ({ ...p, [f.name]: e.target.value }))}
                             className="w-full border-b border-border bg-transparent font-pretendard font-light text-[14px] text-foreground py-2 outline-none focus:border-foreground transition-colors placeholder-foreground/25" />
                         </div>
@@ -415,11 +471,11 @@ function MyPage() {
               <div>
                 <h2 className="font-pretendard text-[28px] font-normal text-foreground mb-8">계정 정보</h2>
                 <form className="flex flex-col gap-6 max-w-[480px]" onSubmit={handleAccountSave}>
-                  {[
+                  {([
                     { label: '이름', name: 'name', type: 'text', value: account.name },
                     { label: '이메일', name: 'email', type: 'email', value: account.email },
                     { label: '전화번호', name: 'phone', type: 'tel', value: account.phone },
-                  ].map((f) => (
+                  ] as const).map((f) => (
                     <div key={f.name}>
                       <label
                         htmlFor={`account-${f.name}`}
