@@ -10,7 +10,6 @@ export default function NewsletterSection() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    // CMS/API integration point: POST /api/newsletter { email }
     setSubmitted(true);
     setEmail('');
   };
@@ -26,17 +25,14 @@ export default function NewsletterSection() {
         className={`flex flex-col items-center transition-all duration-800 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           }`}
       >
-        {/* Heading */}
         <h2 className="font-cormorant font-bold text-[52px] md:text-[64px] lg:text-[70px] tracking-[0.04em] text-foreground text-center mb-4">
           NEWS LETTER
         </h2>
 
-        {/* Subtext */}
         <p className="font-pretendard font-light text-[16px] md:text-[20px] text-foreground text-center mb-10">
           AERTER의 향기로운 소식을 가장 먼저 받아보세요
         </p>
 
-        {/* Email input */}
         {submitted ? (
           <p className="font-pretendard font-light text-[16px] text-foreground/70 tracking-wide">
             감사합니다. 곧 소식을 전해드릴게요 ✦
@@ -44,10 +40,10 @@ export default function NewsletterSection() {
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-[1384px] flex flex-col md:flex-row items-center gap-0"
+            className="w-full max-w-[1384px]"
             aria-label="이메일 구독 폼"
           >
-            <div className="relative flex-1 w-full border border-[#b0b0b0] rounded-[15px] h-[99px] flex items-center px-10">
+            <div className="relative w-full border border-[#b0b0b0] rounded-[15px] flex flex-col md:flex-row items-stretch md:items-center gap-4 md:gap-0 px-6 md:px-10 py-6 md:py-0 md:h-[99px]">
               <label htmlFor="newsletter-email" className="sr-only">
                 이메일 주소
               </label>
@@ -58,12 +54,12 @@ export default function NewsletterSection() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="소식 받을 이메일을 입력해주세요"
                 required
-                className="w-full bg-transparent outline-none font-pretendard font-light text-[18px] md:text-[22px] text-foreground placeholder-[#c9c9c9]"
+                className="w-full flex-1 bg-transparent outline-none font-pretendard font-light text-[16px] md:text-[22px] text-foreground placeholder-[#c9c9c9]"
                 aria-required="true"
               />
               <button
                 type="submit"
-                className="ml-4 shrink-0 font-pretendard font-light text-[14px] tracking-widest text-foreground border border-foreground px-8 py-3 transition-all duration-300 hover:bg-foreground hover:text-background"
+                className="w-full md:w-auto md:ml-4 shrink-0 font-pretendard font-light text-[14px] tracking-widest text-foreground border border-foreground px-6 md:px-8 py-3 transition-all duration-300 hover:bg-foreground hover:text-background"
                 aria-label="구독하기"
               >
                 SUBSCRIBE

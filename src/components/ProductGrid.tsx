@@ -9,7 +9,7 @@ interface ProductGridProps {
 export function ProductGrid({ products, collection }: ProductGridProps) {
   return (
     <div
-      className="grid grid-cols-3 gap-3 md:gap-4 w-full"
+      className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 w-full"
       role="list"
       aria-label="제품 목록"
     >

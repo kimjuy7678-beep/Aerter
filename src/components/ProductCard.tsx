@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingBag, Check } from 'lucide-react';
 import type { Product, Collection } from '../types';
 import { useWishlist } from '../context/WishlistContext';
+import { useCart } from '../context/CartContext';
 
 interface ProductCardProps {
   product: Product;
@@ -10,6 +12,8 @@ interface ProductCardProps {
 
 export function ProductCard({ product, collection }: ProductCardProps) {
   const { toggle, isWished } = useWishlist();
+  const { addItem } = useCart();
+  const [added, setAdded] = useState(false);
   const wished = isWished(product.id);
 
   const handleWish = (e: React.MouseEvent) => {
@@ -18,38 +22,63 @@ export function ProductCard({ product, collection }: ProductCardProps) {
     toggle(product, collection);
   };
 
-  return (
-    <Link
-      to={`/collection/${product.id}`}
-      className="group flex flex-col items-center cursor-pointer"
-      aria-label={`${product.name} — ${product.type} 상세 보기`}
-    >
-      {/* Product image */}
-      <div className="relative w-full aspect-[291/363] rounded-[18px] overflow-hidden bg-[#f5f3f0] mb-3 shadow-sm">
-        <img
-          src={product.image}
-          alt={`${product.name} ${product.type}`}
-          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem(product, collection, 1);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  };
 
-        {/* Wishlist heart button */}
+  return (
+    <div className="group flex flex-col items-center">
+      <div className="relative w-full aspect-[291/363] rounded-[18px] overflow-hidden bg-[#f5f3f0] mb-3 shadow-sm">
+        <Link
+          to={`/collection/${product.id}`}
+          className="absolute inset-0 block"
+          aria-label={`${product.name} — ${product.type} 상세 보기`}
+        >
+          <img
+            src={product.image}
+            alt={`${product.name} ${product.type}`}
+            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
+        </Link>
+
         <button
+          type="button"
           onClick={handleWish}
           aria-label={wished ? '위시리스트에서 제거' : '위시리스트에 추가'}
-          className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 ${wished ? 'opacity-100' : ''
-            }`}
+          aria-pressed={wished}
+          className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm transition-all duration-200 hover:scale-110 z-10"
         >
           <Heart
             size={14}
             className={wished ? 'fill-foreground text-foreground' : 'text-foreground/60'}
           />
         </button>
+
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          aria-label="장바구니에 담기"
+          className="absolute top-3 right-14 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm transition-all duration-200 hover:scale-110 z-10"
+        >
+          {added ? (
+            <Check size={14} className="text-foreground" />
+          ) : (
+            <ShoppingBag size={14} className="text-foreground/60" />
+          )}
+        </button>
       </div>
 
-      {/* Product info */}
-      <div className="text-center w-full space-y-1.5">
+      <Link
+        to={`/collection/${product.id}`}
+        className="text-center w-full space-y-1.5 cursor-pointer"
+        aria-label={`${product.name} — ${product.type} 상세 보기`}
+      >
         <p className="font-pretendard text-[10px] md:text-[11px] font-light tracking-wider text-foreground/75 uppercase leading-snug mt-5">
           {product.type}
         </p>
@@ -62,7 +91,7 @@ export function ProductCard({ product, collection }: ProductCardProps) {
         <p className="font-pretendard text-[15px] md:text-[18px] font-medium text-foreground pt-1">
           {product.price}
         </p>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }

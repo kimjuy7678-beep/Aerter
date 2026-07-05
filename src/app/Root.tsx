@@ -1,7 +1,9 @@
-import { Outlet, useLocation } from 'react-router';
+import { useLocation } from 'react-router';
 import { useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import PageTransition from '../components/PageTransition';
+import CustomCursor from '../components/CustomCursor';
 import { AuthProvider } from '../context/AuthContext';
 import { CartProvider } from '../context/CartContext';
 import { WishlistProvider } from '../context/WishlistContext';
@@ -29,9 +31,10 @@ export default function Root() {
                 >
                   메인 콘텐츠로 이동
                 </a>
+                <CustomCursor />
                 <Header />
                 <main id="main-content" className="flex-1">
-                  <Outlet />
+                  <PageTransition />
                   <ScrollToTop />
                 </main>
                 <Footer />

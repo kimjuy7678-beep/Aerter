@@ -16,17 +16,13 @@ export default function CollectionSection({ collection }: CollectionSectionProps
       className={`flex flex-col w-full md:w-[55%] lg:w-[52%] transition-all duration-700 ${infoVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
         }`}
     >
-      {/* Collection info — upper area */}
       <div className="flex flex-col justify-center flex-1 px-10 md:px-14 lg:px-20 pt-14 pb-10">
-        {/* Korean name */}
         <p className="font-pretendard font-normal text-[18px] md:text-[22px] text-foreground mb-1 leading-snug">
           {collection.koreanName}
         </p>
-        {/* Large English name */}
         <h2 className="font-cormorant font-normal text-[40px] md:text-[52px] lg:text-[58px] leading-none tracking-[0.02em] text-foreground mb-7">
           {collection.name}
         </h2>
-        {/* Description */}
         <div className="mb-5 max-w-[520px]">
           {collection.description.map((line, i) => (
             <p
@@ -37,7 +33,6 @@ export default function CollectionSection({ collection }: CollectionSectionProps
             </p>
           ))}
         </div>
-        {/* Mood tags */}
         <div className="flex gap-4 flex-wrap">
           {collection.tags.map((tag) => (
             <span key={tag} className="font-pretendard font-normal text-[14px] text-muted-foreground">
@@ -47,7 +42,6 @@ export default function CollectionSection({ collection }: CollectionSectionProps
         </div>
       </div>
 
-      {/* Product grid — lower area */}
       <div className="px-6 md:px-10 lg:px-14 pb-14">
         <ProductGrid products={collection.products} collection={collection} />
       </div>
@@ -71,7 +65,6 @@ export default function CollectionSection({ collection }: CollectionSectionProps
       className="w-full mb-24 md:mb-36"
       aria-label={`${collection.name} 컬렉션`}
     >
-      {/* Mobile: stack image on top, info below */}
       <div className="flex flex-col md:hidden">
         <div className="w-full h-[320px] overflow-hidden bg-[#e8e4de] relative">
           <img
@@ -98,7 +91,6 @@ export default function CollectionSection({ collection }: CollectionSectionProps
         </div>
       </div>
 
-      {/* Desktop: side-by-side with image taking full height */}
       <div
         className={`hidden md:flex w-full ${isLeft ? '' : 'flex-row-reverse'}`}
         style={{ minHeight: '680px' }}

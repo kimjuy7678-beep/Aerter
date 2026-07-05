@@ -23,14 +23,13 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
 
   const results = query.trim().length > 0
     ? allProducts.filter((p) =>
-        p.name.toLowerCase().includes(query.toLowerCase()) ||
-        p.collection.koreanName.includes(query) ||
-        p.collection.name.toLowerCase().includes(query.toLowerCase()) ||
-        p.type.toLowerCase().includes(query.toLowerCase())
-      )
+      p.name.toLowerCase().includes(query.toLowerCase()) ||
+      p.collection.koreanName.includes(query) ||
+      p.collection.name.toLowerCase().includes(query.toLowerCase()) ||
+      p.type.toLowerCase().includes(query.toLowerCase())
+    )
     : [];
 
-  // Focus input when opened
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 80);
@@ -39,14 +38,12 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
     }
   }, [open]);
 
-  // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  // Lock body scroll while open
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -55,18 +52,15 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex flex-col" role="dialog" aria-modal="true" aria-label="검색">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-[80] overflow-y-auto" role="dialog" aria-modal="true" aria-label="검색">
       <div
-        className="absolute inset-0 bg-white/90 backdrop-blur-md"
+        className="fixed inset-0 bg-white/90 backdrop-blur-md"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Panel */}
-      <div className="relative z-10 max-w-[760px] w-full mx-auto px-6 pt-28 pb-12 flex flex-col gap-8">
-        {/* Search input */}
-        <div className="flex items-center gap-4 border-b-[1.5px] border-foreground pb-4">
+      <div className="relative z-10 max-w-[760px] w-full mx-auto px-6 pt-28 pb-12 flex flex-col gap-8 min-h-full">
+        <div className="sticky top-0 -mx-6 px-6 pt-2 pb-4 bg-white/95 backdrop-blur-md z-20 flex items-center gap-4 border-b-[1.5px] border-foreground">
           <Search size={20} className="text-foreground/50 shrink-0" />
           <input
             ref={inputRef}
@@ -82,7 +76,6 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           </button>
         </div>
 
-        {/* Suggestions when no query */}
         {query.trim() === '' && (
           <div>
             <p className="font-pretendard text-[11px] tracking-[0.25em] text-muted-foreground mb-5 uppercase">
@@ -111,7 +104,6 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           </div>
         )}
 
-        {/* Results */}
         {query.trim() !== '' && (
           <div>
             <p className="font-pretendard text-[11px] tracking-[0.25em] text-muted-foreground mb-5 uppercase">
