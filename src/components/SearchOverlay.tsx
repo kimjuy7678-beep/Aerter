@@ -59,12 +59,13 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         aria-hidden="true"
       />
 
+      {/* Panel */}
       <div className="relative z-10 max-w-[760px] w-full mx-auto px-6 pt-28 pb-12 flex flex-col gap-8 min-h-full">
         <div className="sticky top-0 -mx-6 px-6 pt-2 pb-4 bg-white/95 backdrop-blur-md z-20 flex items-center gap-4 border-b-[1.5px] border-foreground">
           <Search size={20} className="text-foreground/50 shrink-0" />
           <input
             ref={inputRef}
-            type="search"
+            type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="제품명, 컬렉션, 향 계열로 검색하세요"
