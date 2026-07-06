@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router';
-import { Check, MapPin, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, MapPin, Search, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useOrders } from '../context/OrderContext';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAddresses, type SavedAddress } from '../context/AddressContext';
+import { useCards, type SavedCard } from '../context/CardContext';
 import { useDaumPostcode } from '../hooks/useDaumPostcode';
 import type { CartItem } from '../context/CartContext';
 import SEO from '../components/SEO';
@@ -231,6 +232,226 @@ function AddressPicker({
   );
 }
 
+function CardPicker({
+  cards,
+  selectedId,
+  onSelect,
+  onAddNew,
+}: {
+  cards: SavedCard[];
+  selectedId: string | null;
+  onSelect: (card: SavedCard) => void;
+  onAddNew: (card: Omit<SavedCard, 'id'>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(cards.length === 0);
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiryMonth, setExpiryMonth] = useState('');
+  const [expiryYear, setExpiryYear] = useState('');
+  const [cvc, setCvc] = useState('');
+  const [cardholderName, setCardholderName] = useState('');
+  const [isDefault, setIsDefault] = useState(cards.length === 0);
+
+  const selected = cards.find((c) => c.id === selectedId);
+
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 16);
+    setCardNumber(digits.replace(/(.{4})(?=.)/g, '$1 '));
+  };
+
+  const digitsOnly = cardNumber.replace(/\D/g, '');
+  const canSaveNew =
+    digitsOnly.length === 16 &&
+    expiryMonth.length === 2 &&
+    expiryYear.length === 2 &&
+    cvc.length === 3 &&
+    cardholderName.trim().length > 0;
+
+  const resetForm = () => {
+    setCardNumber('');
+    setExpiryMonth('');
+    setExpiryYear('');
+    setCvc('');
+    setCardholderName('');
+    setIsDefault(false);
+  };
+
+  const handleSaveNew = () => {
+    if (!canSaveNew) return;
+    const last4 = digitsOnly.slice(-4);
+    onAddNew({
+      label: `카드 •••• ${last4}`,
+      last4,
+      expiryMonth,
+      expiryYear,
+      cardholderName,
+      isDefault,
+    });
+    // CVC is only used to simulate verification for this one action — it's
+    // discarded immediately and never passed to onAddNew, so it's never
+    // persisted anywhere (matches how real card-on-file systems work).
+    resetForm();
+    setAdding(false);
+    setOpen(false);
+  };
+
+  return (
+    <div className="mb-6">
+      {cards.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex items-center justify-between w-full border border-border px-5 py-4 text-left hover:border-foreground/40 transition-colors duration-200 mb-3"
+        >
+          <div className="flex items-center gap-3">
+            <CreditCard size={15} className="text-muted-foreground shrink-0" />
+            {selected ? (
+              <span className="font-pretendard text-[13px] text-foreground font-normal">
+                {selected.label} · {selected.expiryMonth}/{selected.expiryYear}
+              </span>
+            ) : (
+              <span className="font-pretendard text-[13px] text-muted-foreground">저장된 카드 선택</span>
+            )}
+          </div>
+          {open ? (
+            <ChevronUp size={15} className="text-muted-foreground shrink-0" />
+          ) : (
+            <ChevronDown size={15} className="text-muted-foreground shrink-0" />
+          )}
+        </button>
+      )}
+
+      {open && cards.length > 0 && (
+        <div className="border border-border divide-y divide-border mb-3">
+          {cards.map((card) => (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => {
+                onSelect(card);
+                setOpen(false);
+                setAdding(false);
+              }}
+              className={`w-full text-left px-5 py-4 transition-colors duration-150 flex items-center gap-3 ${selectedId === card.id ? 'bg-foreground/5' : 'hover:bg-foreground/3'
+                }`}
+            >
+              {selectedId === card.id && <Check size={13} className="text-foreground" />}
+              <div>
+                <p className="font-pretendard text-[13px] font-normal text-foreground">
+                  •••• •••• •••• {card.last4}
+                </p>
+                <p className="font-pretendard font-light text-[12px] text-muted-foreground mt-0.5">
+                  {card.cardholderName} · {card.expiryMonth}/{card.expiryYear}
+                  {card.isDefault && ' · 기본 카드'}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!adding ? (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="w-full text-left px-5 py-4 border border-border font-pretendard text-[13px] text-foreground/70 hover:text-foreground hover:border-foreground/40 transition-colors duration-150"
+        >
+          + 새 카드 추가
+        </button>
+      ) : (
+        <div className="border border-border px-5 py-5 bg-foreground/[0.02] space-y-3">
+          <input
+            type="text"
+            inputMode="numeric"
+            value={cardNumber}
+            onChange={handleCardNumberChange}
+            placeholder="카드번호 (16자리)"
+            maxLength={19}
+            className="w-full border-b border-border bg-transparent font-pretendard text-[14px] py-2 outline-none focus:border-foreground placeholder-foreground/25 tracking-wider"
+          />
+          <div className="grid grid-cols-3 gap-3">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={expiryMonth}
+              onChange={(e) => setExpiryMonth(e.target.value.replace(/\D/g, '').slice(0, 2))}
+              placeholder="MM"
+              maxLength={2}
+              className="border-b border-border bg-transparent font-pretendard text-[13px] py-2 outline-none focus:border-foreground placeholder-foreground/25 text-center"
+            />
+            <input
+              type="text"
+              inputMode="numeric"
+              value={expiryYear}
+              onChange={(e) => setExpiryYear(e.target.value.replace(/\D/g, '').slice(0, 2))}
+              placeholder="YY"
+              maxLength={2}
+              className="border-b border-border bg-transparent font-pretendard text-[13px] py-2 outline-none focus:border-foreground placeholder-foreground/25 text-center"
+            />
+            <input
+              type="password"
+              inputMode="numeric"
+              value={cvc}
+              onChange={(e) => setCvc(e.target.value.replace(/\D/g, '').slice(0, 3))}
+              placeholder="CVC"
+              maxLength={3}
+              className="border-b border-border bg-transparent font-pretendard text-[13px] py-2 outline-none focus:border-foreground placeholder-foreground/25 text-center"
+            />
+          </div>
+          <input
+            type="text"
+            value={cardholderName}
+            onChange={(e) => setCardholderName(e.target.value)}
+            placeholder="카드 소유자 이름"
+            className="w-full border-b border-border bg-transparent font-pretendard text-[13px] py-2 outline-none focus:border-foreground placeholder-foreground/25"
+          />
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isDefault}
+              onChange={(e) => setIsDefault(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span className="font-pretendard text-[12px] text-foreground/70">기본 카드로 설정</span>
+          </label>
+
+          <p className="font-pretendard font-light text-[11px] text-muted-foreground/70 leading-relaxed">
+            카드번호와 CVC는 저장되지 않아요. 등록 시 마지막 4자리와 유효기간만 저장되어, 다음 결제부터 이 카드를
+            바로 선택할 수 있어요.
+          </p>
+
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleSaveNew}
+              disabled={!canSaveNew}
+              className={`flex-1 h-10 font-pretendard text-[12px] tracking-wide transition-colors ${canSaveNew
+                ? 'bg-foreground text-background hover:bg-foreground/85'
+                : 'bg-foreground/20 text-foreground/40 cursor-not-allowed'
+                }`}
+            >
+              카드 등록
+            </button>
+            {cards.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setAdding(false);
+                  resetForm();
+                }}
+                className="flex-1 h-10 border border-border font-pretendard text-[12px] text-foreground/70 hover:border-foreground transition-colors"
+              >
+                취소
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -238,6 +459,7 @@ export default function CheckoutPage() {
   const { addOrder } = useOrders();
   const { isLoggedIn } = useAuthStore();
   const { addresses, defaultAddress, addAddress } = useAddresses();
+  const { cards, defaultCard, addCard } = useCards();
   const { openPostcode } = useDaumPostcode();
   const state = location.state as LocationState | null;
 
@@ -261,6 +483,7 @@ export default function CheckoutPage() {
   const [postcodeManual, setPostcodeManual] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [memoOption, setMemoOption] = useState('');
   const [customMemo, setCustomMemo] = useState('');
   const [form, setForm] = useState({
@@ -282,6 +505,12 @@ export default function CheckoutPage() {
       }));
     }
   }, [isLoggedIn, defaultAddress]);
+
+  useEffect(() => {
+    if (defaultCard) {
+      setSelectedCardId(defaultCard.id);
+    }
+  }, [defaultCard]);
 
   const applyAddress = (addr: SavedAddress) => {
     setSelectedAddressId(addr.id);
@@ -335,7 +564,9 @@ export default function CheckoutPage() {
     setForm((prev) => ({ ...prev, memo: value }));
   };
 
-  const canSubmit = form.name && form.phone && form.email && form.address && form.agreeTerms && form.agreePrivacy;
+  const cardOk = paymentMethod !== 'card' || !!selectedCardId;
+  const canSubmit = form.name && form.phone && form.email && form.address && form.agreeTerms && form.agreePrivacy && cardOk;
+  const selectedCard = cards.find((c) => c.id === selectedCardId);
 
   const handleOrder = () => { if (canSubmit) setStep('confirm'); };
 
@@ -444,6 +675,9 @@ export default function CheckoutPage() {
             </div>
             <p className="font-pretendard text-[12px] text-muted-foreground font-light">
               결제 수단: {PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label}
+              {paymentMethod === 'card' && selectedCard && (
+                <> · •••• {selectedCard.last4} ({selectedCard.expiryMonth}/{selectedCard.expiryYear})</>
+              )}
             </p>
           </div>
 
@@ -580,7 +814,7 @@ export default function CheckoutPage() {
 
             <section>
               <h2 className="font-pretendard text-[12px] tracking-[0.3em] text-muted-foreground uppercase mb-6 pb-4 border-b border-border">결제 수단</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                 {PAYMENT_METHODS.map((m) => (
                   <button key={m.id} type="button" onClick={() => setPaymentMethod(m.id)}
                     className={`py-4 px-3 border text-center font-pretendard text-[12px] tracking-wide transition-all duration-200 ${paymentMethod === m.id
@@ -591,6 +825,18 @@ export default function CheckoutPage() {
                   </button>
                 ))}
               </div>
+
+              {paymentMethod === 'card' && (
+                <CardPicker
+                  cards={cards}
+                  selectedId={selectedCardId}
+                  onSelect={(card) => setSelectedCardId(card.id)}
+                  onAddNew={(card) => {
+                    const saved = addCard(card);
+                    setSelectedCardId(saved.id);
+                  }}
+                />
+              )}
             </section>
 
             <section>
