@@ -11,9 +11,9 @@ import {
     type User as FirebaseUser,
 } from 'firebase/auth';
 import { httpsCallable } from 'firebase/functions';
-import { auth, functions } from '../lib/firebase';
-import { loginWithKakaoPopup, getKakaoCallbackUrl } from '../lib/kakao';
-import { loginWithNaverPopup } from '../lib/naver';
+import { auth, functions } from '../lib/Firebase';
+import { loginWithKakaoPopup, getKakaoCallbackUrl } from '../lib/Kakao';
+import { loginWithNaverPopup } from '../lib/Naver';
 
 export type SocialProvider = 'google' | 'kakao' | 'naver' | 'email';
 
