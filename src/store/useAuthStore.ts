@@ -72,7 +72,8 @@ export const useAuthStore = create<AuthState>((set) => {
         loginWithGoogle: async () => {
             localStorage.setItem(PROVIDER_KEY, 'google');
             const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
+            const result = await signInWithPopup(auth, provider);
+            set({ user: toAppUser(result.user, 'google'), isLoggedIn: true, initializing: false });
         },
 
         loginWithKakao: async () => {
@@ -88,7 +89,8 @@ export const useAuthStore = create<AuthState>((set) => {
             });
 
             localStorage.setItem(PROVIDER_KEY, 'kakao');
-            await signInWithCustomToken(auth, data.token);
+            const result = await signInWithCustomToken(auth, data.token);
+            set({ user: toAppUser(result.user, 'kakao'), isLoggedIn: true, initializing: false });
         },
 
         loginWithNaver: async () => {
@@ -101,12 +103,14 @@ export const useAuthStore = create<AuthState>((set) => {
             const { data } = await naverLogin({ accessToken: naverAccessToken });
 
             localStorage.setItem(PROVIDER_KEY, 'naver');
-            await signInWithCustomToken(auth, data.token);
+            const result = await signInWithCustomToken(auth, data.token);
+            set({ user: toAppUser(result.user, 'naver'), isLoggedIn: true, initializing: false });
         },
 
         loginWithEmail: async (email: string, password: string) => {
             localStorage.setItem(PROVIDER_KEY, 'email');
-            await signInWithEmailAndPassword(auth, email, password);
+            const result = await signInWithEmailAndPassword(auth, email, password);
+            set({ user: toAppUser(result.user, 'email'), isLoggedIn: true, initializing: false });
         },
 
         signUpWithEmail: async (email: string, password: string, name: string) => {
