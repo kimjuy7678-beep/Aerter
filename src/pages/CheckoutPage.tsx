@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAddresses, type SavedAddress } from '../context/AddressContext';
 import { useDaumPostcode } from '../hooks/useDaumPostcode';
 import type { CartItem } from '../context/CartContext';
+import SEO from '../components/SEO';
 
 function formatPrice(n: number) {
   return n.toLocaleString('ko-KR') + '원';
@@ -354,6 +355,7 @@ export default function CheckoutPage() {
   if (step === 'done') {
     return (
       <div className="pt-20 min-h-screen flex flex-col items-center justify-center gap-8 px-6">
+        <SEO title="주문 완료" description="주문이 완료되었습니다." />
         <div className="w-16 h-16 rounded-full bg-foreground flex items-center justify-center">
           <Check size={28} className="text-background" />
         </div>
@@ -389,6 +391,7 @@ export default function CheckoutPage() {
     return (
       <div className="pt-20 pb-28 min-h-screen">
         <div className="max-w-[640px] mx-auto px-8 md:px-0 pt-12">
+          <SEO title="주문 확인" description="주문 내용을 확인하고 결제를 진행하세요." />
           <h1 className="font-cormorant text-[36px] md:text-[44px] font-normal text-foreground mb-2">주문 확인</h1>
           <p className="font-pretendard font-light text-[13px] text-muted-foreground mb-10">아래 내용을 확인하고 결제를 진행해 주세요</p>
 
@@ -462,6 +465,7 @@ export default function CheckoutPage() {
   return (
     <div className="pt-20 pb-28 min-h-screen">
       <div className="max-w-[1200px] mx-auto px-8 md:px-16 lg:px-24 pt-12">
+        <SEO title="결제" description="배송 정보를 입력하고 결제를 진행하세요." />
         <h1 className="font-cormorant text-[42px] md:text-[52px] font-normal text-foreground mb-10">결제</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-12 items-start">

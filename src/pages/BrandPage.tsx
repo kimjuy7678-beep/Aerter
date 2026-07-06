@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { imgHeroAtmosphere, imgChildPeachHero, imgPureCottonHero, imgDeepWoodyHero } from '../assets/images';
 import { useScrollReveal } from '../hooks/useScrollReveal';
+import SEO from '../components/SEO';
 
 function RevealSection({
   children,
@@ -54,6 +55,10 @@ const VISUAL_MOMENTS = [
 export default function BrandPage() {
   return (
     <div className="pt-20 bg-white">
+      <SEO
+        title="브랜드 스토리"
+        description="에테르(Aether)에서 시작된 AERHER의 브랜드 철학과 이야기를 만나보세요."
+      />
       {/* Hero — full viewport atmosphere */}
       <section className="relative h-[90vh] min-h-[560px] overflow-hidden flex items-center justify-center">
         <div className="absolute inset-0">

@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router';
 import { Package } from 'lucide-react';
 import { useAuthStore, type SocialProvider } from '../store/useAuthStore';
 import { useOrders, type Order } from '../context/OrderContext';
+import SEO from '../components/SEO';
 
 const PROVIDERS: {
   id: SocialProvider;
@@ -211,6 +212,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6 pt-20 pb-16">
+      <SEO title="로그인" description="AERHER에 로그인하고 나만의 향기를 만나보세요." />
       <div className="w-full max-w-[400px]">
         <div className="flex flex-col items-center mb-8">
           <Link to="/" className="flex items-center gap-2 mb-6">

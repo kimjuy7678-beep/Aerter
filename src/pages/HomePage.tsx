@@ -3,6 +3,7 @@ import BrandIntro from '../components/BrandIntro';
 import CollectionSection from '../components/CollectionSection';
 import InstagramGallery from '../components/InstagramGallery';
 import NewsletterSection from '../components/NewsletterSection';
+import SEO from '../components/SEO';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { collections } from '../data/collections';
 import { instagramPosts } from '../data/instagram';
@@ -25,6 +26,10 @@ function CollectionHeading() {
 export default function HomePage() {
   return (
     <>
+      <SEO
+        title="AERHER"
+        description="보이지 않는 공기처럼 순수하고 섬세한 향을 빚어내는 프리미엄 향수 브랜드, AERHER의 시그니처 컬렉션을 만나보세요."
+      />
       <Hero />
       <BrandIntro />
       <section id="collection" aria-label="시그니처 컬렉션">

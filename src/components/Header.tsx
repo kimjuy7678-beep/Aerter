@@ -14,6 +14,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'COLLECTION', href: '/collection', isRoute: true },
   { label: 'BRAND', href: '/brand', isRoute: true },
+  { label: 'SCENT QUIZ', href: '/quiz', isRoute: true },
   { label: 'STORY', href: '/#brand', isRoute: false },
 ];
 
@@ -48,6 +49,16 @@ export default function Header() {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setUserMenuOpen(false);
+      setMenuOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleHashNav = (hash: string) => {

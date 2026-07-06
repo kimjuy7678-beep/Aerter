@@ -1,11 +1,83 @@
 import { Link, useNavigate } from 'react-router';
 import { ShoppingBag, X } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { useCart, type CartItem } from '../context/CartContext';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../context/ToastContext';
+import SEO from '../components/SEO';
+import AnimatedPrice from '../components/animatedPrice';
 
-function formatPrice(n: number) {
-  return n.toLocaleString('ko-KR') + '원';
+function CartItemRow({
+  item,
+  onRemove,
+  onUpdateQty,
+}: {
+  item: CartItem;
+  onRemove: (productId: string, productName: string) => void;
+  onUpdateQty: (productId: string, qty: number) => void;
+}) {
+  const lineTotal = parseInt(item.product.price.replace(/[^0-9]/g, ''), 10) * item.qty;
+
+  return (
+    <div className="relative flex gap-5 md:gap-8 py-8 group">
+      <button
+        onClick={() => onRemove(item.product.id, item.product.name)}
+        aria-label={`${item.product.name} 삭제`}
+        className="absolute top-8 right-0 w-7 h-7 flex items-center justify-center rounded-full text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-colors"
+      >
+        <X size={15} />
+      </button>
+
+      <Link to={`/collection/${item.product.id}`} className="shrink-0">
+        <div className="w-[90px] md:w-[120px] aspect-[3/4] rounded-[14px] overflow-hidden bg-[#f5f3f0]">
+          <img
+            src={item.product.image}
+            alt={item.product.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          />
+        </div>
+      </Link>
+
+      <div className="flex-1 flex flex-col justify-between min-w-0 pr-8">
+        <div>
+          <p className="font-pretendard text-[11px] tracking-widest text-muted-foreground uppercase mb-1">
+            {item.collection.name} · {item.product.type}
+          </p>
+          <Link to={`/collection/${item.product.id}`}>
+            <h2 className="font-pretendard text-[16px] md:text-[18px] font-normal text-foreground hover:opacity-70 transition-opacity">
+              {item.product.name}
+            </h2>
+          </Link>
+          <p className="font-pretendard text-[13px] font-light text-foreground/55 mt-0.5">
+            {item.product.volume}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between mt-5">
+          <div className="flex items-center border border-border">
+            <button
+              onClick={() => onUpdateQty(item.product.id, item.qty - 1)}
+              className="w-9 h-9 flex items-center justify-center text-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-colors text-lg"
+              aria-label="수량 감소"
+            >
+              −
+            </button>
+            <span className="w-10 text-center font-pretendard text-[14px] text-foreground tabular-nums">
+              {item.qty}
+            </span>
+            <button
+              onClick={() => onUpdateQty(item.product.id, item.qty + 1)}
+              className="w-9 h-9 flex items-center justify-center text-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-colors text-lg"
+              aria-label="수량 증가"
+            >
+              +
+            </button>
+          </div>
+
+          <AnimatedPrice value={lineTotal} className="font-pretendard font-medium text-[18px] text-foreground" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function CartPage() {
@@ -29,6 +101,7 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <div className="pt-20 min-h-screen flex flex-col items-center justify-center gap-8 px-6">
+        <SEO title="장바구니" description="장바구니에 담긴 상품을 확인하고 주문하세요." />
         <div className="flex flex-col items-center gap-4 text-center">
           <ShoppingBag size={48} className="text-foreground/20" />
           <h1 className="font-pretendard text-[36px] text-foreground">장바구니가 비어 있습니다</h1>
@@ -48,8 +121,9 @@ export default function CartPage() {
 
   return (
     <div className="pt-20 pb-28 min-h-screen">
+      <SEO title="장바구니" description="장바구니에 담긴 상품을 확인하고 주문하세요." />
       <div className="border-b border-border px-8 md:px-16 lg:px-24 py-10">
-        <h1 className="font-cormorant text-[42px] md:text-[52px] font-normal text-foreground">
+        <h1 className="font-pretendard text-[42px] md:text-[52px] font-normal text-foreground">
           장바구니
         </h1>
         <p className="font-pretendard font-light text-[13px] text-muted-foreground mt-1">
@@ -62,87 +136,32 @@ export default function CartPage() {
 
           <div className="flex flex-col divide-y divide-border">
             {items.map((item) => (
-              <div key={item.product.id} className="relative flex gap-5 md:gap-8 py-8 group">
-                <button
-                  onClick={() => handleRemove(item.product.id, item.product.name)}
-                  aria-label={`${item.product.name} 삭제`}
-                  className="absolute top-8 right-0 w-7 h-7 flex items-center justify-center rounded-full text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-colors"
-                >
-                  <X size={15} />
-                </button>
-
-                <Link to={`/collection/${item.product.id}`} className="shrink-0">
-                  <div className="w-[90px] md:w-[120px] aspect-[3/4] rounded-[14px] overflow-hidden bg-[#f5f3f0]">
-                    <img
-                      src={item.product.image}
-                      alt={item.product.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                    />
-                  </div>
-                </Link>
-
-                <div className="flex-1 flex flex-col justify-between min-w-0 pr-8">
-                  <div>
-                    <p className="font-pretendard text-[11px] tracking-widest text-muted-foreground uppercase mb-1">
-                      {item.collection.name} · {item.product.type}
-                    </p>
-                    <Link to={`/collection/${item.product.id}`}>
-                      <h2 className="font-pretendard text-[16px] md:text-[18px] font-normal text-foreground hover:opacity-70 transition-opacity">
-                        {item.product.name}
-                      </h2>
-                    </Link>
-                    <p className="font-pretendard text-[13px] font-light text-foreground/55 mt-0.5">
-                      {item.product.volume}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-between mt-5">
-                    <div className="flex items-center border border-border">
-                      <button
-                        onClick={() => updateQty(item.product.id, item.qty - 1)}
-                        className="w-9 h-9 flex items-center justify-center text-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-colors text-lg"
-                        aria-label="수량 감소"
-                      >
-                        −
-                      </button>
-                      <span className="w-10 text-center font-pretendard text-[14px] text-foreground tabular-nums">
-                        {item.qty}
-                      </span>
-                      <button
-                        onClick={() => updateQty(item.product.id, item.qty + 1)}
-                        className="w-9 h-9 flex items-center justify-center text-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-colors text-lg"
-                        aria-label="수량 증가"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <p className="font-pretendard font-medium text-[18px] text-foreground">
-                      {formatPrice(parseInt(item.product.price.replace(/[^0-9]/g, '')) * item.qty)}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <CartItemRow
+                key={item.product.id}
+                item={item}
+                onRemove={handleRemove}
+                onUpdateQty={updateQty}
+              />
             ))}
           </div>
 
           <div className="lg:sticky lg:top-28">
             <div className="border border-border p-8 rounded-[4px]">
-              <h2 className="font-cormorant text-[24px] font-normal text-foreground mb-8">
+              <h2 className="font-pretendard text-[24px] font-normal text-foreground mb-8">
                 주문 요약
               </h2>
 
               <div className="space-y-4 font-pretendard text-[14px] text-foreground">
                 <div className="flex justify-between">
                   <span className="font-light text-foreground/65">상품 합계</span>
-                  <span>{formatPrice(totalPrice)}</span>
+                  <AnimatedPrice value={totalPrice} />
                 </div>
                 <div className="flex justify-between">
                   <span className="font-light text-foreground/65">배송비</span>
                   <span>
                     {SHIPPING === 0
                       ? <span className="text-foreground/50">무료</span>
-                      : formatPrice(SHIPPING)}
+                      : <AnimatedPrice value={SHIPPING} />}
                   </span>
                 </div>
                 {SHIPPING > 0 && (
@@ -154,7 +173,7 @@ export default function CartPage() {
 
               <div className="border-t border-border mt-6 pt-6 flex justify-between font-pretendard">
                 <span className="text-[15px] text-foreground">총 결제 금액</span>
-                <span className="text-[20px] font-medium text-foreground">{formatPrice(finalPrice)}</span>
+                <AnimatedPrice value={finalPrice} className="text-[20px] font-medium text-foreground" />
               </div>
 
               <button

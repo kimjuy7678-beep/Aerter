@@ -16,12 +16,14 @@ export interface Order {
   shippingName: string;
   shippingPhone: string;
   shippingAddress: string;
+  cancelReason?: string;
 }
 
 interface OrderContextValue {
   orders: Order[];
   addOrder: (order: Omit<Order, 'id' | 'date' | 'status'>) => Order;
-  cancelOrder: (id: string) => void;
+  cancelOrder: (id: string, reason: string) => void;
+  updateOrderStatus: (id: string, status: Order['status']) => void;
   findOrderById: (id: string) => Order | undefined;
   findOrdersByPhone: (phone: string) => Order[];
   hasPurchased: (productId: string) => boolean;
@@ -64,14 +66,18 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     return order;
   };
 
-  const cancelOrder = (id: string) => {
+  const cancelOrder = (id: string, reason: string) => {
     setOrders((prev) =>
       prev.map((o) => {
         if (o.id !== id) return o;
         if (NON_CANCELLABLE_STATUSES.includes(o.status)) return o;
-        return { ...o, status: '취소됨' };
+        return { ...o, status: '취소됨', cancelReason: reason };
       })
     );
+  };
+
+  const updateOrderStatus = (id: string, status: Order['status']) => {
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
   };
 
   const findOrderById = (id: string): Order | undefined => {
@@ -94,7 +100,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   return (
     <OrderContext.Provider
-      value={{ orders, addOrder, cancelOrder, findOrderById, findOrdersByPhone, hasPurchased }}
+      value={{ orders, addOrder, cancelOrder, updateOrderStatus, findOrderById, findOrdersByPhone, hasPurchased }}
     >
       {children}
     </OrderContext.Provider>

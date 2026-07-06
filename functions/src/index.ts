@@ -45,6 +45,7 @@ async function upsertFirebaseUser(uid: string, rawFields: UserFields) {
             await getAuth().updateUser(uid, fields);
         }
     } catch (err) {
+        // updateUser throws if the user doesn't exist yet — create it instead.
         try {
             await getAuth().createUser({ uid, ...fields });
         } catch (createErr) {
@@ -75,6 +76,7 @@ export const kakaoLogin = onCall(async (request) => {
             throw new HttpsError('failed-precondition', '서버에 카카오 키가 설정되지 않았습니다.');
         }
 
+        // 1) Exchange the authorization code for an access token.
         const tokenParams = new URLSearchParams({
             grant_type: 'authorization_code',
             client_id: restApiKey,
@@ -95,6 +97,7 @@ export const kakaoLogin = onCall(async (request) => {
         }
         const { access_token: accessToken } = (await tokenRes.json()) as { access_token: string };
 
+        // 2) Fetch the Kakao profile using that access token.
         const profileRes = await fetch('https://kapi.kakao.com/v2/user/me', {
             headers: { Authorization: `Bearer ${accessToken}` },
         });
@@ -152,4 +155,18 @@ export const naverLogin = onCall(async (request) => {
         console.error('naverLogin unexpected error:', err);
         throw new HttpsError('internal', '네이버 로그인 처리 중 오류가 발생했습니다.');
     }
+});
+
+export const adminLogin = onCall(async (request) => {
+    const { password } = (request.data ?? {}) as { password?: string };
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminPassword) {
+        console.error('ADMIN_PASSWORD is not set (functions/.env)');
+        throw new HttpsError('failed-precondition', '서버에 관리자 비밀번호가 설정되지 않았습니다.');
+    }
+    if (!password || password !== adminPassword) {
+        throw new HttpsError('permission-denied', '비밀번호가 올바르지 않습니다.');
+    }
+    return { ok: true };
 });

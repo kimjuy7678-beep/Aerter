@@ -8,6 +8,8 @@ import { useWishlist } from '../context/WishlistContext';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../context/ToastContext';
 import { useOrders } from '../context/OrderContext';
+import SEO from '../components/SEO';
+import SkeletonImage from '../components/Skeletonimage';
 import type { Product, Collection } from '../types';
 
 // Find product + its parent collection by product id
@@ -62,6 +64,15 @@ export default function ProductDetailPage() {
   const { isLoggedIn } = useAuthStore();
   const { showToast, showConfirm } = useToast();
   const { hasPurchased } = useOrders();
+  const [zoomActive, setZoomActive] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+
+  const handleImageMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPos({ x, y });
+  };
   // productId from useParams is the same as product.id — use it before the null guard
   const wished = isWished(productId ?? '');
 
@@ -86,7 +97,10 @@ export default function ProductDetailPage() {
     addItem(product, collection, qty);
     setAdded(true);
     setTimeout(() => setAdded(false), 2200);
-    showToast('장바구니에 담았습니다');
+    showConfirm('장바구니에 담았습니다. 이동하시겠어요?', [
+      { label: '장바구니로 이동', onClick: () => navigate('/cart') },
+      { label: '계속 쇼핑하기', onClick: () => { }, variant: 'ghost' },
+    ]);
   };
 
   const handleAddToCart = () => {
@@ -127,6 +141,11 @@ export default function ProductDetailPage() {
 
   return (
     <div className="pt-20 bg-white">
+      <SEO
+        title={`${product.name} — ${collection.name}`}
+        description={`${product.name} (${product.volume}) — ${collection.description[0] ?? ''}`}
+        image={product.image}
+      />
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 px-8 md:px-16 lg:px-20 pt-8 pb-6" aria-label="탐색 경로">
         <Link to="/" className="font-pretendard text-[11px] tracking-widest text-muted-foreground hover:text-foreground transition-colors">
@@ -148,12 +167,20 @@ export default function ProductDetailPage() {
 
           {/* Left — product image */}
           <div className="sticky top-28">
-            <div className="group relative overflow-hidden rounded-[24px] bg-[#f5f3f0] aspect-[4/5]">
-              <img
+            <div
+              className="group relative overflow-hidden rounded-[24px] bg-[#f5f3f0] aspect-[4/5] cursor-zoom-in"
+              onMouseEnter={() => setZoomActive(true)}
+              onMouseLeave={() => setZoomActive(false)}
+              onMouseMove={handleImageMouseMove}
+            >
+              <SkeletonImage
                 src={product.image}
                 alt={`${product.name} — ${product.type}`}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-                fetchPriority="high"
+                className="w-full h-full object-cover transition-transform duration-300"
+                style={{
+                  transform: zoomActive ? 'scale(2)' : 'scale(1)',
+                  transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                }}
               />
             </div>
 
@@ -198,7 +225,13 @@ export default function ProductDetailPage() {
                 {product.name}
               </h1>
               <button
-                onClick={() => toggle(product, collection)}
+                onClick={() => {
+                  toggle(product, collection);
+                  showToast(
+                    wished ? '위시리스트에서 삭제했습니다' : '위시리스트에 담았습니다',
+                    'info'
+                  );
+                }}
                 aria-label={wished ? '위시리스트에서 제거' : '위시리스트에 추가'}
                 className="mt-2 shrink-0 w-11 h-11 flex items-center justify-center border border-border hover:border-foreground transition-all duration-200 group"
               >
@@ -211,13 +244,24 @@ export default function ProductDetailPage() {
                 />
               </button>
             </div>
-            <p className="font-pretendard font-light text-[14px] text-muted-foreground mb-8">
+            <p className="font-pretendard font-light text-[14px] text-muted-foreground mb-2">
               {product.volume}
             </p>
+            {wished ? (
+              <p className="font-pretendard font-light text-[12px] text-foreground/60 mb-8 flex items-center gap-1.5">
+                <Heart size={11} className="fill-foreground/60 text-foreground/60" />
+                위시리스트에 담긴 상품이에요
+              </p>
+            ) : (
+              <div className="mb-6" />
+            )}
 
             {/* Price */}
-            <p className="font-pretendard text-[32px] font-medium text-foreground mb-10">
+            <p className="font-pretendard text-[32px] font-medium text-foreground mb-3">
               {product.price}
+            </p>
+            <p className="font-pretendard font-light text-[12px] text-muted-foreground mb-10">
+              주문 후 1–3 영업일 이내 발송 · 5만원 이상 구매 시 무료 배송
             </p>
 
             {/* Description */}

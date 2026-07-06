@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Heart, ShoppingBag, Check } from 'lucide-react';
 import type { Product, Collection } from '../types';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useOrders } from '../context/OrderContext';
 import { useToast } from '../context/ToastContext';
+import SkeletonImage from './Skeletonimage';
 
 interface ProductCardProps {
   product: Product;
@@ -16,7 +17,8 @@ export function ProductCard({ product, collection }: ProductCardProps) {
   const { toggle, isWished } = useWishlist();
   const { items, addItem } = useCart();
   const { hasPurchased } = useOrders();
-  const { showToast, showConfirm } = useToast();
+  const { showConfirm } = useToast();
+  const navigate = useNavigate();
   const [added, setAdded] = useState(false);
   const wished = isWished(product.id);
 
@@ -30,7 +32,10 @@ export function ProductCard({ product, collection }: ProductCardProps) {
     addItem(product, collection, 1);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
-    showToast('장바구니에 담았습니다');
+    showConfirm('장바구니에 담았습니다. 이동하시겠어요?', [
+      { label: '장바구니로 이동', onClick: () => navigate('/cart') },
+      { label: '계속 쇼핑하기', onClick: () => { }, variant: 'ghost' },
+    ]);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -65,7 +70,7 @@ export function ProductCard({ product, collection }: ProductCardProps) {
           className="absolute inset-0 block"
           aria-label={`${product.name} — ${product.type} 상세 보기`}
         >
-          <img
+          <SkeletonImage
             src={product.image}
             alt={`${product.name} ${product.type}`}
             className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"

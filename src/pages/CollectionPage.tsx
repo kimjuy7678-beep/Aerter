@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Heart, ShoppingBag, Check } from 'lucide-react';
 import { collections } from '../data/collections';
 import { useScrollReveal } from '../hooks/useScrollReveal';
@@ -7,6 +7,8 @@ import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useOrders } from '../context/OrderContext';
 import { useToast } from '../context/ToastContext';
+import SEO from '../components/SEO';
+import SkeletonImage from '../components/Skeletonimage';
 import type { Product, Collection } from '../types';
 
 const FILTERS = ['ALL', 'EAU DE PARFUM', 'PARFUM DIFFUSER', 'PARFUM HAND CREAM'];
@@ -33,7 +35,8 @@ function ProductItem({ product, index }: { product: FlatProduct; index: number }
   const { toggle, isWished } = useWishlist();
   const { items, addItem } = useCart();
   const { hasPurchased } = useOrders();
-  const { showToast, showConfirm } = useToast();
+  const { showConfirm } = useToast();
+  const navigate = useNavigate();
   const [added, setAdded] = useState(false);
   const wished = isWished(product.id);
 
@@ -47,7 +50,10 @@ function ProductItem({ product, index }: { product: FlatProduct; index: number }
     addItem(product, product.collection, 1);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
-    showToast('장바구니에 담았습니다');
+    showConfirm('장바구니에 담았습니다. 이동하시겠어요?', [
+      { label: '장바구니로 이동', onClick: () => navigate('/cart') },
+      { label: '계속 쇼핑하기', onClick: () => { }, variant: 'ghost' },
+    ]);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -89,7 +95,7 @@ function ProductItem({ product, index }: { product: FlatProduct; index: number }
           className="absolute inset-0 block"
           aria-label={label}
         >
-          <img
+          <SkeletonImage
             src={product.image}
             alt={`${product.name} — ${product.type}`}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
@@ -181,6 +187,10 @@ export default function CollectionPage() {
 
   return (
     <div className="pt-20 pb-28">
+      <SEO
+        title="컬렉션"
+        description="에테르의 시그니처 향수 컬렉션 — Child Peach, Pure Cotton, Deep Woody를 만나보세요."
+      />
       <div className="relative h-[240px] md:h-[320px] overflow-hidden bg-[#f5f3f0]">
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
           <p className="font-pretendard font-light text-[13px] tracking-[0.3em] text-muted-foreground uppercase">AERHER</p>
