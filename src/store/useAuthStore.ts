@@ -3,16 +3,19 @@ import {
     onAuthStateChanged,
     signInWithPopup,
     signInWithCustomToken,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    updateProfile,
     signOut,
     GoogleAuthProvider,
     type User as FirebaseUser,
 } from 'firebase/auth';
 import { httpsCallable } from 'firebase/functions';
-import { auth, functions } from '../lib/Firebase';
+import { auth, functions } from '../lib/firebase';
 import { loginWithKakaoPopup, getKakaoCallbackUrl } from '../lib/Kakao';
 import { loginWithNaverPopup } from '../lib/Naver';
 
-export type SocialProvider = 'google' | 'kakao' | 'naver';
+export type SocialProvider = 'google' | 'kakao' | 'naver' | 'email';
 
 export interface AppUser {
     id: string;
@@ -29,6 +32,8 @@ interface AuthState {
     loginWithGoogle: () => Promise<void>;
     loginWithKakao: () => Promise<void>;
     loginWithNaver: () => Promise<void>;
+    loginWithEmail: (email: string, password: string) => Promise<void>;
+    signUpWithEmail: (email: string, password: string, name: string) => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -97,6 +102,24 @@ export const useAuthStore = create<AuthState>((set) => {
 
             localStorage.setItem(PROVIDER_KEY, 'naver');
             await signInWithCustomToken(auth, data.token);
+        },
+
+        loginWithEmail: async (email: string, password: string) => {
+            localStorage.setItem(PROVIDER_KEY, 'email');
+            await signInWithEmailAndPassword(auth, email, password);
+        },
+
+        signUpWithEmail: async (email: string, password: string, name: string) => {
+            localStorage.setItem(PROVIDER_KEY, 'email');
+            const credential = await createUserWithEmailAndPassword(auth, email, password);
+            if (name) {
+                await updateProfile(credential.user, { displayName: name });
+            }
+            set({
+                user: toAppUser(credential.user, 'email'),
+                isLoggedIn: true,
+                initializing: false,
+            });
         },
 
         logout: async () => {

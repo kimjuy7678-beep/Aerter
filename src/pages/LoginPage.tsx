@@ -12,6 +12,7 @@ const PROVIDERS: {
   border: string;
   hover: string;
   icon: React.ReactNode;
+  recommended?: boolean;
 }[] = [
     {
       id: 'kakao',
@@ -51,6 +52,7 @@ const PROVIDERS: {
       text: 'text-[#3c4043]',
       border: 'border-[#dadce0]',
       hover: 'hover:bg-[#f8f9fa]',
+      recommended: true,
       icon: (
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
           <path d="M19.6 10.23c0-.68-.06-1.36-.18-2H10v3.79h5.4a4.63 4.63 0 0 1-2 3.04v2.52h3.23c1.89-1.74 2.97-4.3 2.97-7.35Z" fill="#4285F4" />
@@ -69,16 +71,14 @@ const STATUS_STYLE: Record<string, string> = {
   '배송 완료': 'text-foreground/40',
 };
 
-type LookupType = 'orderId' | 'phone';
-
 function OrderLookupPanel() {
   const { findOrderById, findOrdersByPhone } = useOrders();
-  const [lookupType, setLookupType] = useState<LookupType>('orderId');
+  const [lookupType, setLookupType] = useState<'orderId' | 'phone'>('orderId');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Order[] | null>(null);
   const [searched, setSearched] = useState(false);
 
-  const switchType = (type: LookupType) => {
+  const switchType = (type: 'orderId' | 'phone') => {
     setLookupType(type);
     setQuery('');
     setResults(null);
@@ -282,11 +282,17 @@ export default function LoginPage() {
                       font-pretendard font-normal text-[14px] tracking-wide
                       transition-all duration-200 cursor-pointer
                       disabled:opacity-60 disabled:cursor-not-allowed
+                      ${provider.recommended ? 'ring-1 ring-foreground/15' : ''}
                       ${provider.bg} ${provider.text} ${provider.border} ${provider.hover}
                     `}
                     aria-label={provider.label}
                     aria-busy={isLoading}
                   >
+                    {provider.recommended && (
+                      <span className="absolute -top-2 -right-2 bg-foreground text-background text-[9px] font-pretendard tracking-widest px-2 py-0.5 rounded-full">
+                        추천
+                      </span>
+                    )}
                     <span className="absolute left-5 flex items-center">
                       {provider.icon}
                     </span>
