@@ -381,9 +381,11 @@ function MyPage() {
                             >
                               재구매
                             </button>
-                            <button className="font-pretendard text-[11px] tracking-widest text-muted-foreground border border-border px-5 py-2 hover:border-foreground hover:text-foreground transition-all duration-200">
-                              리뷰 작성
-                            </button>
+                            {order.status !== '취소됨' && (
+                              <button className="font-pretendard text-[11px] tracking-widest text-muted-foreground border border-border px-5 py-2 hover:border-foreground hover:text-foreground transition-all duration-200">
+                                리뷰 작성
+                              </button>
+                            )}
                             {CANCELLABLE_STATUSES.includes(order.status) && (
                               <button
                                 onClick={() =>
