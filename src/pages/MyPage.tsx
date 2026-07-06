@@ -6,6 +6,7 @@ import { useOrders } from '../context/OrderContext';
 import { useAddresses, type SavedAddress } from '../context/AddressContext';
 import { useDaumPostcode } from '../hooks/useDaumPostcode';
 import { useAuthStore } from '../store/useAuthStore';
+import { useToast } from '../context/ToastContext';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 const STATUS_STYLE: Record<string, string> = {
@@ -13,7 +14,10 @@ const STATUS_STYLE: Record<string, string> = {
   '배송 준비': 'text-amber-600',
   '배송 중': 'text-blue-600',
   '배송 완료': 'text-foreground/40',
+  '취소됨': 'text-red-400',
 };
+
+const CANCELLABLE_STATUSES = ['결제 완료', '배송 준비'];
 
 const TABS = [
   { id: 'orders', label: '주문 내역', icon: Package },
@@ -32,10 +36,6 @@ interface StoredAccountExtras {
   point?: number;
 }
 
-// name/email default to the real logged-in social account. Extra fields
-// (phone/grade/point) — and a manually-edited name/email override, if the
-// user explicitly saved one in the 계정 정보 tab — persist locally, since
-// Google/Kakao/Naver don't provide them.
 function loadAccount(authUser: { name: string; email: string } | null) {
   let stored: StoredAccountExtras = {};
   try {
@@ -57,13 +57,13 @@ function loadAccount(authUser: { name: string; email: string } | null) {
 function MyPage() {
   const [activeTab, setActiveTab] = useState('orders');
   const { items: wishItems, toggle } = useWishlist();
-  const { orders } = useOrders();
+  const { orders, cancelOrder } = useOrders();
   const { addresses, addAddress, updateAddress, deleteAddress, setDefault } = useAddresses();
   const { openPostcode } = useDaumPostcode();
   const { user, logout } = useAuthStore();
+  const { showToast, showConfirm } = useToast();
   const navigate = useNavigate();
 
-  // New address form state
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [addrForm, setAddrForm] = useState({ label: '집', name: '', phone: '', postcode: '', address: '', addressDetail: '', isDefault: false });
@@ -104,9 +104,6 @@ function MyPage() {
   const [account, setAccount] = useState(() => loadAccount(user));
   const [accountSaved, setAccountSaved] = useState(false);
 
-  // If the logged-in user changes (e.g. logs in after this component mounted,
-  // or switches accounts) and no manual override is stored, keep name/email
-  // in sync with the real social account.
   useEffect(() => {
     let stored: StoredAccountExtras = {};
     try {
@@ -120,7 +117,6 @@ function MyPage() {
       name: stored.name || user?.name || prev.name,
       email: stored.email || user?.email || prev.email,
     }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,6 +133,19 @@ function MyPage() {
   const handleLogout = async () => {
     await logout();
     navigate('/');
+  };
+
+  const handleCancelOrder = (orderId: string) => {
+    showConfirm('주문을 취소하시겠어요? 취소 후에는 되돌릴 수 없어요.', [
+      {
+        label: '주문 취소',
+        onClick: () => {
+          cancelOrder(orderId);
+          showToast('주문이 취소되었습니다', 'info');
+        },
+      },
+      { label: '아니요', onClick: () => { }, variant: 'ghost' },
+    ]);
   };
 
   return (
@@ -273,6 +282,14 @@ function MyPage() {
                             <button className="font-pretendard text-[11px] tracking-widest text-muted-foreground border border-border px-5 py-2 hover:border-foreground hover:text-foreground transition-all duration-200">
                               리뷰 작성
                             </button>
+                            {CANCELLABLE_STATUSES.includes(order.status) && (
+                              <button
+                                onClick={() => handleCancelOrder(order.id)}
+                                className="font-pretendard text-[11px] tracking-widest text-muted-foreground border border-border px-5 py-2 hover:border-red-400 hover:text-red-400 transition-all duration-200"
+                              >
+                                주문 취소
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -536,7 +553,6 @@ function MyPage() {
   );
 }
 
-// Wrap with auth guard
 const MyPageGuarded = () => (
   <ProtectedRoute>
     <MyPage />

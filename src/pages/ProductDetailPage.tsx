@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../context/ToastContext';
+import { useOrders } from '../context/OrderContext';
 import type { Product, Collection } from '../types';
 
 // Find product + its parent collection by product id
@@ -60,6 +61,7 @@ export default function ProductDetailPage() {
   const { toggle, isWished } = useWishlist();
   const { isLoggedIn } = useAuthStore();
   const { showToast, showConfirm } = useToast();
+  const { hasPurchased } = useOrders();
   // productId from useParams is the same as product.id — use it before the null guard
   const wished = isWished(productId ?? '');
 
@@ -96,13 +98,31 @@ export default function ProductDetailPage() {
       ]);
       return;
     }
+    if (hasPurchased(product.id)) {
+      showConfirm(`${product.name}은(는) 이미 구매하신 상품이에요. 다시 구매하시겠어요?`, [
+        { label: '담기', onClick: confirmAdd },
+        { label: '취소', onClick: () => { }, variant: 'ghost' },
+      ]);
+      return;
+    }
     confirmAdd();
   };
 
-  const handleBuyNow = () => {
+  const goToCheckout = () => {
     navigate('/checkout', {
       state: { directProduct: { product, collection, qty } },
     });
+  };
+
+  const handleBuyNow = () => {
+    if (hasPurchased(product.id)) {
+      showConfirm(`${product.name}은(는) 이미 구매하신 상품이에요. 다시 구매하시겠어요?`, [
+        { label: '구매하기', onClick: goToCheckout },
+        { label: '취소', onClick: () => { }, variant: 'ghost' },
+      ]);
+      return;
+    }
+    goToCheckout();
   };
 
   return (

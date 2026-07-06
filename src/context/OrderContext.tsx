@@ -10,7 +10,7 @@ export interface OrderLineItem {
 export interface Order {
   id: string;
   date: string;
-  status: '결제 완료' | '배송 준비' | '배송 중' | '배송 완료';
+  status: '결제 완료' | '배송 준비' | '배송 중' | '배송 완료' | '취소됨';
   items: OrderLineItem[];
   totalPrice: number;
   shippingName: string;
@@ -21,12 +21,17 @@ export interface Order {
 interface OrderContextValue {
   orders: Order[];
   addOrder: (order: Omit<Order, 'id' | 'date' | 'status'>) => Order;
+  cancelOrder: (id: string) => void;
   findOrderById: (id: string) => Order | undefined;
   findOrdersByPhone: (phone: string) => Order[];
+  hasPurchased: (productId: string) => boolean;
 }
 
 const OrderContext = createContext<OrderContextValue | null>(null);
 const STORAGE_KEY = 'aerher_orders';
+
+// Orders in this state can no longer be cancelled — shipping is already in motion.
+const NON_CANCELLABLE_STATUSES: Order['status'][] = ['배송 중', '배송 완료', '취소됨'];
 
 function normalizePhone(phone: string) {
   return phone.replace(/[^0-9]/g, '');
@@ -59,6 +64,16 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     return order;
   };
 
+  const cancelOrder = (id: string) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== id) return o;
+        if (NON_CANCELLABLE_STATUSES.includes(o.status)) return o;
+        return { ...o, status: '취소됨' };
+      })
+    );
+  };
+
   const findOrderById = (id: string): Order | undefined => {
     const target = id.trim().toUpperCase();
     if (!target) return undefined;
@@ -71,8 +86,16 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     return orders.filter((o) => normalizePhone(o.shippingPhone) === target);
   };
 
+  const hasPurchased = (productId: string): boolean => {
+    return orders.some(
+      (o) => o.status !== '취소됨' && o.items.some((item) => item.product.id === productId)
+    );
+  };
+
   return (
-    <OrderContext.Provider value={{ orders, addOrder, findOrderById, findOrdersByPhone }}>
+    <OrderContext.Provider
+      value={{ orders, addOrder, cancelOrder, findOrderById, findOrdersByPhone, hasPurchased }}
+    >
       {children}
     </OrderContext.Provider>
   );
