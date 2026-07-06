@@ -1,23 +1,22 @@
 const NAVER_CLIENT_ID = import.meta.env.VITE_NAVER_CLIENT_ID;
-const NAVER_STATE_KEY = 'naver_oauth_state';
-const OAUTH_POPUP_FEATURES = 'width=480,height=640';
 
 function getCallbackUrl() {
     return `${window.location.origin}/oauth/naver/callback`;
 }
 
 function randomState() {
-    return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2);
+    return Math.random().toString(36).slice(2);
 }
 
-function clearNaverState() {
-    localStorage.removeItem(NAVER_STATE_KEY);
-}
-
-export function getExpectedNaverState() {
-    return localStorage.getItem(NAVER_STATE_KEY);
-}
-
+/**
+ * Opens a popup window that runs Naver's OAuth2 implicit-grant flow.
+ * Naver redirects the popup to /oauth/naver/callback with the access token
+ * in the URL hash; NaverCallbackPage reads it and posts it back here via
+ * window.postMessage. Resolves with the raw Naver access token.
+ *
+ * Requires: NaverCallbackPage mounted at route "oauth/naver/callback", and
+ * that exact URL registered as a Callback URL in the Naver Developers console.
+ */
 export function loginWithNaverPopup(): Promise<string> {
     return new Promise((resolve, reject) => {
         if (typeof window === 'undefined') {
@@ -25,13 +24,8 @@ export function loginWithNaverPopup(): Promise<string> {
             return;
         }
 
-        if (!NAVER_CLIENT_ID) {
-            reject(new Error('네이버 Client ID가 설정되지 않았습니다.'));
-            return;
-        }
-
         const state = randomState();
-        localStorage.setItem(NAVER_STATE_KEY, state);
+        sessionStorage.setItem('naver_oauth_state', state);
 
         const authUrl =
             `https://nid.naver.com/oauth2.0/authorize` +
@@ -40,7 +34,7 @@ export function loginWithNaverPopup(): Promise<string> {
             `&redirect_uri=${encodeURIComponent(getCallbackUrl())}` +
             `&state=${encodeURIComponent(state)}`;
 
-        const popup = window.open(authUrl, 'naver-login', OAUTH_POPUP_FEATURES);
+        const popup = window.open(authUrl, 'naver-login', 'width=480,height=640');
         if (!popup) {
             reject(new Error('팝업이 차단되었습니다. 브라우저에서 팝업을 허용한 뒤 다시 시도해주세요.'));
             return;
@@ -50,7 +44,7 @@ export function loginWithNaverPopup(): Promise<string> {
             if (event.origin !== window.location.origin) return;
             if (event.data?.source !== 'naver-login') return;
 
-            cleanup();
+            window.removeEventListener('message', handleMessage);
             try {
                 popup.close();
             } catch {
