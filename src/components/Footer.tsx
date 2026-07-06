@@ -36,9 +36,9 @@ export default function Footer() {
 
           {/* Brand column */}
           <div className="md:col-span-1">
-            <Link to="/" className="flex items-baseline gap-1 mb-3 w-fit">
-              <span className="font-cinzel text-[60px] leading-none text-foreground"><img src="/logo.png" alt="logo" className="h-8 w-auto" /></span>
-              <span className="font-cormorant text-[30px] tracking-[0.12em] text-foreground mt-1">AERHER</span>
+            <Link to="/" className="flex items-center gap-2 mb-3 w-fit">
+              <img src="/logo.png" alt="logo" className="h-8 w-auto" />
+              <span className="font-cormorant text-[30px] tracking-[0.12em] text-foreground">AERHER</span>
             </Link>
             <p className="font-pretendard font-light text-[14px] text-muted-foreground leading-relaxed mb-3">
               에테르

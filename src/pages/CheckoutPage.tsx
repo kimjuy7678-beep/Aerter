@@ -3,10 +3,9 @@ import { useLocation, useNavigate, Link } from 'react-router';
 import { Check, MapPin, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useOrders } from '../context/OrderContext';
-import { useAuth } from '../context/AuthContext';
+import { useAuthStore } from '../store/useAuthStore';
 import { useAddresses, type SavedAddress } from '../context/AddressContext';
 import { useDaumPostcode } from '../hooks/useDaumPostcode';
-import ProtectedRoute from '../components/ProtectedRoute';
 import type { CartItem } from '../context/CartContext';
 
 function formatPrice(n: number) {
@@ -48,7 +47,6 @@ const AGREEMENT_FIELDS: { name: AgreementField; label: string; bold: boolean }[]
 
 type Step = 'form' | 'confirm' | 'done';
 
-// ── Saved address picker (with add-new inline form) ────────────────────────────
 function AddressPicker({
   addresses,
   selectedId,
@@ -232,13 +230,12 @@ function AddressPicker({
   );
 }
 
-// ── Main checkout component ───────────────────────────────────────────────────
-function CheckoutPage() {
+export default function CheckoutPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { items: cartItems, clearCart } = useCart();
   const { addOrder } = useOrders();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn } = useAuthStore();
   const { addresses, defaultAddress, addAddress } = useAddresses();
   const { openPostcode } = useDaumPostcode();
   const state = location.state as LocationState | null;
@@ -246,6 +243,13 @@ function CheckoutPage() {
   const checkoutItems: CartItem[] = state?.directProduct
     ? [state.directProduct]
     : state?.items ?? cartItems;
+
+  useEffect(() => {
+    if (checkoutItems.length === 0) {
+      navigate('/cart', { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const subtotal = checkoutItems.reduce((sum, i) => sum + parsePrice(i.product.price) * i.qty, 0);
   const shipping = subtotal >= 50000 ? 0 : 3000;
@@ -361,11 +365,18 @@ function CheckoutPage() {
           <p className="font-pretendard font-light text-[14px] text-muted-foreground">
             입력하신 이메일로 주문 확인서를 보내드렸습니다.
           </p>
+          {!isLoggedIn && (
+            <p className="font-pretendard font-light text-[12px] text-muted-foreground/80 mt-3 max-w-[360px]">
+              비회원 주문은 계정에 저장되지 않아요. 문의가 필요하면 위 주문 번호를 꼭 기억해 주세요.
+            </p>
+          )}
         </div>
         <div className="flex gap-4 mt-4">
-          <Link to="/mypage" className="font-pretendard font-light text-[12px] tracking-[0.25em] text-foreground border border-foreground px-8 py-4 hover:bg-foreground hover:text-background transition-all duration-300">
-            주문 내역 보기
-          </Link>
+          {isLoggedIn && (
+            <Link to="/mypage" className="font-pretendard font-light text-[12px] tracking-[0.25em] text-foreground border border-foreground px-8 py-4 hover:bg-foreground hover:text-background transition-all duration-300">
+              주문 내역 보기
+            </Link>
+          )}
           <Link to="/" className="font-pretendard font-light text-[12px] tracking-[0.25em] text-muted-foreground border border-border px-8 py-4 hover:border-foreground hover:text-foreground transition-all duration-300">
             홈으로
           </Link>
@@ -459,6 +470,12 @@ function CheckoutPage() {
               <h2 className="font-pretendard text-[12px] tracking-[0.3em] text-muted-foreground uppercase mb-6 pb-4 border-b border-border">
                 배송 정보
               </h2>
+
+              {!isLoggedIn && (
+                <p className="font-pretendard font-light text-[12px] text-muted-foreground mb-6">
+                  비회원으로 주문하고 있어요. 받는 분 정보를 직접 입력해 주세요.
+                </p>
+              )}
 
               {isLoggedIn && (
                 <AddressPicker
@@ -638,11 +655,3 @@ function CheckoutPage() {
     </div>
   );
 }
-
-const CheckoutPageGuarded = () => (
-  <ProtectedRoute>
-    <CheckoutPage />
-  </ProtectedRoute>
-);
-
-export { CheckoutPageGuarded as default };

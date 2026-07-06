@@ -19,7 +19,7 @@
   "auth": {
     "authorizedDomains": [
       "localhost",
-      "aerter-kimjyeons-projects.vercel.app"
+      "aerter-kimjuyeons-projects.vercel.app"
     ]
   }
 }

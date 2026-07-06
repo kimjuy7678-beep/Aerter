@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router';
-import { Trash2, ShoppingBag, Lock } from 'lucide-react';
+import { ShoppingBag, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuthStore } from '../store/useAuthStore';
+import { useToast } from '../context/ToastContext';
 
 function formatPrice(n: number) {
   return n.toLocaleString('ko-KR') + '원';
@@ -10,17 +11,19 @@ function formatPrice(n: number) {
 export default function CartPage() {
   const { items, totalPrice, totalCount, removeItem, updateQty } = useCart();
   const { isLoggedIn } = useAuthStore();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const SHIPPING = totalPrice >= 50000 || totalPrice === 0 ? 0 : 3000;
   const finalPrice = totalPrice + SHIPPING;
 
   const handleOrder = () => {
-    if (!isLoggedIn) {
-      navigate('/login', { state: { from: '/checkout' } });
-      return;
-    }
     navigate('/checkout', { state: { items, totalPrice: finalPrice } });
+  };
+
+  const handleRemove = (productId: string, productName: string) => {
+    removeItem(productId);
+    showToast(`${productName}을(를) 삭제했습니다`, 'info');
   };
 
   if (items.length === 0) {
@@ -45,7 +48,6 @@ export default function CartPage() {
 
   return (
     <div className="pt-20 pb-28 min-h-screen">
-      {/* Page header */}
       <div className="border-b border-border px-8 md:px-16 lg:px-24 py-10">
         <h1 className="font-cormorant text-[42px] md:text-[52px] font-normal text-foreground">
           장바구니
@@ -58,11 +60,17 @@ export default function CartPage() {
       <div className="max-w-[1300px] mx-auto px-8 md:px-16 lg:px-24 mt-10">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-12 items-start">
 
-          {/* Cart items */}
           <div className="flex flex-col divide-y divide-border">
             {items.map((item) => (
-              <div key={item.product.id} className="flex gap-5 md:gap-8 py-8 group">
-                {/* Product image */}
+              <div key={item.product.id} className="relative flex gap-5 md:gap-8 py-8 group">
+                <button
+                  onClick={() => handleRemove(item.product.id, item.product.name)}
+                  aria-label={`${item.product.name} 삭제`}
+                  className="absolute top-8 right-0 w-7 h-7 flex items-center justify-center rounded-full text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-colors"
+                >
+                  <X size={15} />
+                </button>
+
                 <Link to={`/collection/${item.product.id}`} className="shrink-0">
                   <div className="w-[90px] md:w-[120px] aspect-[3/4] rounded-[14px] overflow-hidden bg-[#f5f3f0]">
                     <img
@@ -73,8 +81,7 @@ export default function CartPage() {
                   </div>
                 </Link>
 
-                {/* Info */}
-                <div className="flex-1 flex flex-col justify-between min-w-0">
+                <div className="flex-1 flex flex-col justify-between min-w-0 pr-8">
                   <div>
                     <p className="font-pretendard text-[11px] tracking-widest text-muted-foreground uppercase mb-1">
                       {item.collection.name} · {item.product.type}
@@ -90,7 +97,6 @@ export default function CartPage() {
                   </div>
 
                   <div className="flex items-center justify-between mt-5">
-                    {/* Qty stepper */}
                     <div className="flex items-center border border-border">
                       <button
                         onClick={() => updateQty(item.product.id, item.qty - 1)}
@@ -111,25 +117,15 @@ export default function CartPage() {
                       </button>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                      <p className="font-pretendard font-medium text-[18px] text-foreground">
-                        {formatPrice(parseInt(item.product.price.replace(/[^0-9]/g, '')) * item.qty)}
-                      </p>
-                      <button
-                        onClick={() => removeItem(item.product.id)}
-                        className="text-foreground/30 hover:text-foreground transition-colors duration-200"
-                        aria-label={`${item.product.name} 삭제`}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                    <p className="font-pretendard font-medium text-[18px] text-foreground">
+                      {formatPrice(parseInt(item.product.price.replace(/[^0-9]/g, '')) * item.qty)}
+                    </p>
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Order summary */}
           <div className="lg:sticky lg:top-28">
             <div className="border border-border p-8 rounded-[4px]">
               <h2 className="font-cormorant text-[24px] font-normal text-foreground mb-8">
@@ -165,13 +161,19 @@ export default function CartPage() {
                 onClick={handleOrder}
                 className="w-full mt-8 h-14 bg-foreground text-background font-pretendard font-light text-[12px] tracking-[0.3em] hover:bg-foreground/85 transition-colors duration-300 flex items-center justify-center gap-2"
               >
-                {!isLoggedIn && <Lock size={13} />}
                 주문하기
               </button>
 
               {!isLoggedIn && (
                 <p className="font-pretendard font-light text-[11px] text-muted-foreground text-center mt-2">
-                  주문하려면 로그인이 필요합니다
+                  <Link
+                    to="/login"
+                    state={{ from: '/checkout' }}
+                    className="underline underline-offset-2 hover:text-foreground transition-colors"
+                  >
+                    로그인
+                  </Link>
+                  하면 주문 내역 확인과 재구매가 더 편리해요
                 </p>
               )}
 
@@ -183,7 +185,6 @@ export default function CartPage() {
               </Link>
             </div>
 
-            {/* Benefits */}
             <div className="mt-6 space-y-3">
               {[
                 '5만원 이상 무료 배송',

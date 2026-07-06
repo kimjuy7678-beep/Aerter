@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router';
+import { Package } from 'lucide-react';
 import { useAuthStore, type SocialProvider } from '../store/useAuthStore';
+import { useOrders, type Order } from '../context/OrderContext';
 
 const PROVIDERS: {
   id: SocialProvider;
@@ -60,10 +62,132 @@ const PROVIDERS: {
     },
   ];
 
+const STATUS_STYLE: Record<string, string> = {
+  '결제 완료': 'text-foreground/70',
+  '배송 준비': 'text-amber-600',
+  '배송 중': 'text-blue-600',
+  '배송 완료': 'text-foreground/40',
+};
+
+type LookupType = 'orderId' | 'phone';
+
+function OrderLookupPanel() {
+  const { findOrderById, findOrdersByPhone } = useOrders();
+  const [lookupType, setLookupType] = useState<LookupType>('orderId');
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<Order[] | null>(null);
+  const [searched, setSearched] = useState(false);
+
+  const switchType = (type: LookupType) => {
+    setLookupType(type);
+    setQuery('');
+    setResults(null);
+    setSearched(false);
+  };
+
+  const handleLookup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    if (lookupType === 'orderId') {
+      const found = findOrderById(query);
+      setResults(found ? [found] : []);
+    } else {
+      setResults(findOrdersByPhone(query));
+    }
+    setSearched(true);
+  };
+
+  return (
+    <div>
+      <div className="flex gap-2 mb-5">
+        <button
+          type="button"
+          onClick={() => switchType('orderId')}
+          className={`flex-1 py-2.5 font-pretendard text-[12px] tracking-wide border transition-colors duration-200 ${lookupType === 'orderId'
+            ? 'border-foreground text-foreground bg-foreground/5'
+            : 'border-border text-muted-foreground hover:border-foreground/40'
+            }`}
+        >
+          주문번호로 조회
+        </button>
+        <button
+          type="button"
+          onClick={() => switchType('phone')}
+          className={`flex-1 py-2.5 font-pretendard text-[12px] tracking-wide border transition-colors duration-200 ${lookupType === 'phone'
+            ? 'border-foreground text-foreground bg-foreground/5'
+            : 'border-border text-muted-foreground hover:border-foreground/40'
+            }`}
+        >
+          전화번호로 조회
+        </button>
+      </div>
+
+      <form onSubmit={handleLookup} className="flex gap-2 mb-8">
+        <input
+          type={lookupType === 'phone' ? 'tel' : 'text'}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={lookupType === 'orderId' ? '주문번호 입력 (예: ORD-20260706-AB12C)' : '주문 시 입력한 연락처'}
+          className="flex-1 min-w-0 border-b border-border bg-transparent font-pretendard font-light text-[14px] text-foreground py-3 outline-none focus:border-foreground transition-colors placeholder-foreground/25"
+        />
+        <button
+          type="submit"
+          className="shrink-0 font-pretendard text-[12px] tracking-widest text-foreground border border-foreground px-5 hover:bg-foreground hover:text-background transition-all duration-200"
+        >
+          조회
+        </button>
+      </form>
+
+      {searched && (
+        results && results.length > 0 ? (
+          <div className="flex flex-col gap-4">
+            {results.map((order) => (
+              <div key={order.id} className="border border-border p-5 rounded-[4px]">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-pretendard text-[11px] tracking-widest text-muted-foreground">
+                    {order.date} · {order.id}
+                  </p>
+                  <span className={`font-pretendard text-[12px] ${STATUS_STYLE[order.status] ?? 'text-foreground/60'}`}>
+                    {order.status}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-3">
+                  {order.items.map((item, i) => (
+                    <div key={`${item.product.id}-${i}`} className="flex gap-3 items-center">
+                      <div className="w-12 h-14 rounded-[8px] overflow-hidden bg-[#f5f3f0] shrink-0">
+                        <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-pretendard text-[13px] text-foreground truncate">{item.product.name}</p>
+                        <p className="font-pretendard text-[11px] text-foreground/55">{item.qty}개</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="font-pretendard font-medium text-[14px] text-foreground mt-3 pt-3 border-t border-border text-right">
+                  {order.totalPrice.toLocaleString('ko-KR')}원
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <Package size={28} className="text-foreground/20" />
+            <p className="font-pretendard font-light text-[13px] text-muted-foreground">
+              조회 결과가 없습니다
+            </p>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const { loginWithGoogle, loginWithKakao, loginWithNaver } = useAuthStore();
   const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<'login' | 'lookup'>('login');
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string })?.from ?? '/mypage';
@@ -86,107 +210,140 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6 pt-20">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6 pt-20 pb-16">
       <div className="w-full max-w-[400px]">
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-12">
-          <Link to="/" className="flex items-baseline gap-1 mb-6">
-            <span className="font-cinzel text-[52px] leading-none text-foreground"><img src="/logo.png" alt="logo" className="h-8 w-auto" /></span>
+        <div className="flex flex-col items-center mb-8">
+          <Link to="/" className="flex items-center gap-2 mb-6">
+            <img src="/logo.png" alt="logo" className="h-8 w-auto" />
             <span className="font-cormorant text-[28px] tracking-[0.15em] text-foreground">AERHER</span>
           </Link>
-          <h1 className="font-cormorant text-[28px] font-normal text-foreground tracking-wide text-center mb-2">
-            로그인 / 회원가입
-          </h1>
-          {isCheckoutFlow ? (
-            <div className="flex flex-col items-center gap-1">
-              <p className="font-pretendard font-light text-[13px] text-foreground/80 text-center">
-                구매를 위해 로그인이 필요합니다.
+        </div>
+
+        <div className="flex w-full mb-8 border-b border-border">
+          <button
+            onClick={() => setMode('login')}
+            className={`flex-1 pb-3 font-pretendard text-[13px] tracking-widest transition-colors duration-200 border-b-2 -mb-px ${mode === 'login'
+              ? 'border-foreground text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+          >
+            로그인
+          </button>
+          <button
+            onClick={() => setMode('lookup')}
+            className={`flex-1 pb-3 font-pretendard text-[13px] tracking-widest transition-colors duration-200 border-b-2 -mb-px ${mode === 'lookup'
+              ? 'border-foreground text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+          >
+            비회원 주문조회
+          </button>
+        </div>
+
+        {mode === 'login' ? (
+          <>
+            <div className="flex flex-col items-center mb-10 text-center">
+              <h1 className="font-cormorant text-[28px] font-normal text-foreground tracking-wide mb-2">
+                로그인 / 회원가입
+              </h1>
+              {isCheckoutFlow ? (
+                <div className="flex flex-col items-center gap-1">
+                  <p className="font-pretendard font-light text-[13px] text-foreground/80 text-center">
+                    구매를 위해 로그인이 필요합니다.
+                  </p>
+                  <p className="font-pretendard font-light text-[12px] text-muted-foreground text-center">
+                    소셜 계정으로 간편하게 시작하세요.
+                  </p>
+                </div>
+              ) : (
+                <p className="font-pretendard font-light text-[13px] text-muted-foreground text-center leading-relaxed">
+                  소셜 계정으로 간편하게 시작하세요.<br />
+                  처음이라면 자동으로 가입됩니다.
+                </p>
+              )}
+            </div>
+
+            {error && (
+              <p className="font-pretendard font-light text-[12px] text-red-500 text-center mb-4" role="alert">
+                {error}
               </p>
-              <p className="font-pretendard font-light text-[12px] text-muted-foreground text-center">
-                소셜 계정으로 간편하게 시작하세요.
+            )}
+
+            <div className="flex flex-col gap-3">
+              {PROVIDERS.map((provider) => {
+                const isLoading = loadingProvider === provider.id;
+                return (
+                  <button
+                    key={provider.id}
+                    onClick={() => handleSocialLogin(provider.id)}
+                    disabled={loadingProvider !== null}
+                    className={`
+                      relative flex items-center w-full h-[52px] px-5 border rounded-none
+                      font-pretendard font-normal text-[14px] tracking-wide
+                      transition-all duration-200 cursor-pointer
+                      disabled:opacity-60 disabled:cursor-not-allowed
+                      ${provider.bg} ${provider.text} ${provider.border} ${provider.hover}
+                    `}
+                    aria-label={provider.label}
+                    aria-busy={isLoading}
+                  >
+                    <span className="absolute left-5 flex items-center">
+                      {provider.icon}
+                    </span>
+                    <span className="w-full text-center">
+                      {isLoading ? '로그인 중...' : provider.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-4 my-8">
+              <div className="flex-1 h-px bg-border" />
+              <span className="font-pretendard font-light text-[11px] text-muted-foreground tracking-widest">OR</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            <div className="text-center">
+              {isCheckoutFlow ? (
+                <Link
+                  to="/cart"
+                  className="font-pretendard font-light text-[12px] tracking-widest text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+                >
+                  장바구니로 돌아가기
+                </Link>
+              ) : (
+                <Link
+                  to="/"
+                  className="font-pretendard font-light text-[12px] tracking-widest text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+                >
+                  로그인 없이 둘러보기
+                </Link>
+              )}
+            </div>
+
+            <p className="font-pretendard font-light text-[11px] text-muted-foreground/70 text-center leading-relaxed mt-10">
+              로그인 시{' '}
+              <a href="#" className="underline underline-offset-2 hover:text-foreground transition-colors">이용약관</a>
+              {' '}및{' '}
+              <a href="#" className="underline underline-offset-2 hover:text-foreground transition-colors">개인정보처리방침</a>
+              에 동의한 것으로 간주됩니다.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-col items-center mb-8 text-center">
+              <h1 className="font-cormorant text-[28px] font-normal text-foreground tracking-wide mb-2">
+                비회원 주문조회
+              </h1>
+              <p className="font-pretendard font-light text-[13px] text-muted-foreground text-center leading-relaxed">
+                주문 시 입력하신 정보로 주문 내역을 조회하세요.
               </p>
             </div>
-          ) : (
-            <p className="font-pretendard font-light text-[13px] text-muted-foreground text-center leading-relaxed">
-              소셜 계정으로 간편하게 시작하세요.<br />
-              처음이라면 자동으로 가입됩니다.
-            </p>
-          )}
-        </div>
 
-        {/* Error message */}
-        {error && (
-          <p className="font-pretendard font-light text-[12px] text-red-500 text-center mb-4" role="alert">
-            {error}
-          </p>
+            <OrderLookupPanel />
+          </>
         )}
-
-        {/* Social login buttons */}
-        <div className="flex flex-col gap-3">
-          {PROVIDERS.map((provider) => {
-            const isLoading = loadingProvider === provider.id;
-            return (
-              <button
-                key={provider.id}
-                onClick={() => handleSocialLogin(provider.id)}
-                disabled={loadingProvider !== null}
-                className={`
-                  relative flex items-center w-full h-[52px] px-5 border rounded-none
-                  font-pretendard font-normal text-[14px] tracking-wide
-                  transition-all duration-200 cursor-pointer
-                  disabled:opacity-60 disabled:cursor-not-allowed
-                  ${provider.bg} ${provider.text} ${provider.border} ${provider.hover}
-                `}
-                aria-label={provider.label}
-                aria-busy={isLoading}
-              >
-                {/* Icon — left aligned */}
-                <span className="absolute left-5 flex items-center">
-                  {provider.icon}
-                </span>
-                {/* Label — centered */}
-                <span className="w-full text-center">
-                  {isLoading ? '로그인 중...' : provider.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Divider */}
-        <div className="flex items-center gap-4 my-8">
-          <div className="flex-1 h-px bg-border" />
-          <span className="font-pretendard font-light text-[11px] text-muted-foreground tracking-widest">OR</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
-
-        {/* Guest continue */}
-        <div className="text-center">
-          {isCheckoutFlow ? (
-            <Link
-              to="/cart"
-              className="font-pretendard font-light text-[12px] tracking-widest text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
-            >
-              장바구니로 돌아가기
-            </Link>
-          ) : (
-            <Link
-              to="/"
-              className="font-pretendard font-light text-[12px] tracking-widest text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
-            >
-              로그인 없이 둘러보기
-            </Link>
-          )}
-        </div>
-
-        {/* Terms notice */}
-        <p className="font-pretendard font-light text-[11px] text-muted-foreground/70 text-center leading-relaxed mt-10">
-          로그인 시{' '}
-          <a href="#" className="underline underline-offset-2 hover:text-foreground transition-colors">이용약관</a>
-          {' '}및{' '}
-          <a href="#" className="underline underline-offset-2 hover:text-foreground transition-colors">개인정보처리방침</a>
-          에 동의한 것으로 간주됩니다.
-        </p>
       </div>
     </div>
   );

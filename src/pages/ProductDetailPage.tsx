@@ -1,13 +1,15 @@
 import { useParams, Link, useNavigate } from 'react-router';
 import { useState } from 'react';
-import { ArrowLeft, ChevronRight, Heart, Lock } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Heart } from 'lucide-react';
 import { collections } from '../data/collections';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuthStore } from '../store/useAuthStore';
+import { useToast } from '../context/ToastContext';
 import type { Product, Collection } from '../types';
 
+// Find product + its parent collection by product id
 function findProduct(id: string): { product: Product; collection: Collection } | null {
   for (const col of collections) {
     const product = col.products.find((p) => p.id === id);
@@ -16,10 +18,12 @@ function findProduct(id: string): { product: Product; collection: Collection } |
   return null;
 }
 
+// Other products in same collection (excluding current)
 function getSiblings(collection: Collection, currentId: string): Product[] {
   return collection.products.filter((p) => p.id !== currentId);
 }
 
+// Related products from other collections (one per collection)
 function getRelated(currentCollectionId: string): Array<Product & { collectionName: string }> {
   return collections
     .filter((c) => c.id !== currentCollectionId)
@@ -52,10 +56,11 @@ export default function ProductDetailPage() {
   const navigate = useNavigate();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
-  const { addItem } = useCart();
+  const { addItem, items } = useCart();
   const { toggle, isWished } = useWishlist();
   const { isLoggedIn } = useAuthStore();
-
+  const { showToast, showConfirm } = useToast();
+  // productId from useParams is the same as product.id — use it before the null guard
   const wished = isWished(productId ?? '');
 
   const result = findProduct(productId ?? '');
@@ -75,17 +80,26 @@ export default function ProductDetailPage() {
   const siblings = getSiblings(collection, product.id);
   const related = getRelated(collection.id);
 
-  const handleAddToCart = () => {
+  const confirmAdd = () => {
     addItem(product, collection, qty);
     setAdded(true);
     setTimeout(() => setAdded(false), 2200);
+    showToast('장바구니에 담았습니다');
+  };
+
+  const handleAddToCart = () => {
+    const alreadyInCart = items.some((item) => item.product.id === product.id);
+    if (alreadyInCart) {
+      showConfirm(`${product.name}은(는) 이미 장바구니에 있어요. 추가할까요?`, [
+        { label: '추가하기', onClick: confirmAdd },
+        { label: '취소', onClick: () => { }, variant: 'ghost' },
+      ]);
+      return;
+    }
+    confirmAdd();
   };
 
   const handleBuyNow = () => {
-    if (!isLoggedIn) {
-      navigate('/login', { state: { from: `/collection/${product.id}` } });
-      return;
-    }
     navigate('/checkout', {
       state: { directProduct: { product, collection, qty } },
     });
@@ -238,19 +252,17 @@ export default function ProductDetailPage() {
                 onClick={handleBuyNow}
                 className="w-full h-14 font-pretendard font-light text-[12px] tracking-[0.3em] border border-foreground text-foreground hover:bg-foreground/5 transition-colors duration-300 flex items-center justify-center gap-2"
               >
-                {!isLoggedIn && <Lock size={13} className="text-foreground/50" />}
                 바로 구매하기
               </button>
               {!isLoggedIn && (
                 <p className="font-pretendard font-light text-[11px] text-muted-foreground text-center -mt-2">
-                  구매하려면{' '}
                   <button
                     onClick={() => navigate('/login', { state: { from: `/collection/${product.id}` } })}
                     className="underline underline-offset-2 hover:text-foreground transition-colors"
                   >
                     로그인
                   </button>
-                  이 필요합니다
+                  하면 주문 내역 확인과 재구매가 더 편리해요
                 </p>
               )}
             </div>

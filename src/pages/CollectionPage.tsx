@@ -5,6 +5,7 @@ import { collections } from '../data/collections';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
+import { useToast } from '../context/ToastContext';
 import type { Product, Collection } from '../types';
 
 const FILTERS = ['ALL', 'EAU DE PARFUM', 'PARFUM DIFFUSER', 'PARFUM HAND CREAM'];
@@ -29,7 +30,8 @@ const allProducts: FlatProduct[] = collections.flatMap((col) =>
 function ProductItem({ product, index }: { product: FlatProduct; index: number }) {
   const { ref, visible } = useScrollReveal(0.05);
   const { toggle, isWished } = useWishlist();
-  const { addItem } = useCart();
+  const { items, addItem } = useCart();
+  const { showToast, showConfirm } = useToast();
   const [added, setAdded] = useState(false);
   const wished = isWished(product.id);
 
@@ -39,12 +41,25 @@ function ProductItem({ product, index }: { product: FlatProduct; index: number }
     toggle(product, product.collection);
   };
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const confirmAdd = () => {
     addItem(product, product.collection, 1);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
+    showToast('장바구니에 담았습니다');
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const alreadyInCart = items.some((item) => item.product.id === product.id);
+    if (alreadyInCart) {
+      showConfirm(`${product.name}은(는) 이미 장바구니에 있어요. 추가할까요?`, [
+        { label: '추가하기', onClick: confirmAdd },
+        { label: '취소', onClick: () => { }, variant: 'ghost' },
+      ]);
+      return;
+    }
+    confirmAdd();
   };
 
   const label = `${product.name} ${product.type} 상세 보기`;

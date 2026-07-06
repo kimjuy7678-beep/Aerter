@@ -9,7 +9,7 @@ export interface OrderLineItem {
 
 export interface Order {
   id: string;
-  date: string;            // 'YYYY.MM.DD'
+  date: string;
   status: '결제 완료' | '배송 준비' | '배송 중' | '배송 완료';
   items: OrderLineItem[];
   totalPrice: number;
@@ -21,10 +21,16 @@ export interface Order {
 interface OrderContextValue {
   orders: Order[];
   addOrder: (order: Omit<Order, 'id' | 'date' | 'status'>) => Order;
+  findOrderById: (id: string) => Order | undefined;
+  findOrdersByPhone: (phone: string) => Order[];
 }
 
 const OrderContext = createContext<OrderContextValue | null>(null);
 const STORAGE_KEY = 'aerher_orders';
+
+function normalizePhone(phone: string) {
+  return phone.replace(/[^0-9]/g, '');
+}
 
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>(() => {
@@ -53,8 +59,20 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     return order;
   };
 
+  const findOrderById = (id: string): Order | undefined => {
+    const target = id.trim().toUpperCase();
+    if (!target) return undefined;
+    return orders.find((o) => o.id.toUpperCase() === target);
+  };
+
+  const findOrdersByPhone = (phone: string): Order[] => {
+    const target = normalizePhone(phone);
+    if (!target) return [];
+    return orders.filter((o) => normalizePhone(o.shippingPhone) === target);
+  };
+
   return (
-    <OrderContext.Provider value={{ orders, addOrder }}>
+    <OrderContext.Provider value={{ orders, addOrder, findOrderById, findOrdersByPhone }}>
       {children}
     </OrderContext.Provider>
   );

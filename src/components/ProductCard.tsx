@@ -4,6 +4,7 @@ import { Heart, ShoppingBag, Check } from 'lucide-react';
 import type { Product, Collection } from '../types';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
+import { useToast } from '../context/ToastContext';
 
 interface ProductCardProps {
   product: Product;
@@ -12,7 +13,8 @@ interface ProductCardProps {
 
 export function ProductCard({ product, collection }: ProductCardProps) {
   const { toggle, isWished } = useWishlist();
-  const { addItem } = useCart();
+  const { items, addItem } = useCart();
+  const { showToast, showConfirm } = useToast();
   const [added, setAdded] = useState(false);
   const wished = isWished(product.id);
 
@@ -22,12 +24,25 @@ export function ProductCard({ product, collection }: ProductCardProps) {
     toggle(product, collection);
   };
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const confirmAdd = () => {
     addItem(product, collection, 1);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
+    showToast('장바구니에 담았습니다');
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const alreadyInCart = items.some((item) => item.product.id === product.id);
+    if (alreadyInCart) {
+      showConfirm(`${product.name}은(는) 이미 장바구니에 있어요. 추가할까요?`, [
+        { label: '추가하기', onClick: confirmAdd },
+        { label: '취소', onClick: () => { }, variant: 'ghost' },
+      ]);
+      return;
+    }
+    confirmAdd();
   };
 
   return (
