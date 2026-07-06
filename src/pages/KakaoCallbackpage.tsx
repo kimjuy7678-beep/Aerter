@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { getExpectedKakaoState } from '../lib/Kakao';
 
 export default function KakaoCallbackPage() {
     useEffect(() => {
@@ -6,14 +7,14 @@ export default function KakaoCallbackPage() {
         const code = params.get('code');
         const state = params.get('state');
         const errorParam = params.get('error');
-        const expectedState = sessionStorage.getItem('kakao_oauth_state');
+        const expectedState = getExpectedKakaoState();
 
         if (window.opener) {
             if (code && state && state === expectedState && !errorParam) {
                 window.opener.postMessage({ source: 'kakao-login', code }, window.location.origin);
             } else {
                 window.opener.postMessage(
-                    { source: 'kakao-login', error: '카카오 로그인에 실패했습니다.' },
+                    { source: 'kakao-login', error: errorParam ?? '카카오 로그인에 실패했습니다.' },
                     window.location.origin
                 );
             }

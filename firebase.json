@@ -15,5 +15,11 @@
         "npm --prefix \"$RESOURCE_DIR\" run build"
       ]
     }
-  ]
+  ],
+  "auth": {
+    "authorizedDomains": [
+      "localhost",
+      "aerter-kimjyeons-projects.vercel.app"
+    ]
+  }
 }
